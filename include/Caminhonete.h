@@ -1,12 +1,13 @@
-#ifndef MOTO_H
-#define MOTO_H
+#ifndef CAMINHONETE_H
+#define CAMINHONETE_H
 
 #include "Veiculo.h"
+
 using namespace std;
 
-class Moto : public Veiculo {
+class Caminhonete : public Veiculo {
 public:
-    Moto(const string& placa, const string& modelo, const string& cor, double taxaHora);
+    Caminhonete(const string& placa, const string& modelo, const string& cor, double taxaHora);
 
     string getTipo() const override;
     double calcularTarifa(double minutos) const override;
