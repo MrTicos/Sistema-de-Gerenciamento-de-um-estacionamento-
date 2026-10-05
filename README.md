@@ -38,6 +38,7 @@ Projeto desenvolvido para a disciplina **Estruturas de Dados Orientadas a Objeto
 | 5 | **Listar veículos** | Exibe quem está no estacionamento agora (vaga, placa, tipo, modelo, cor e entrada). |
 | 6 | **Histórico de saídas** | Lista saídas anteriores com placa, entrada, saída e valor pago. |
 | 7 | **Faturamento do dia** | Soma o valor arrecadado em uma data. |
+| 8 | **Gerenciar veículos** | Exclua ou edite uma vaga/carro. |
 | 9 | **Configurações** | Altera a quantidade de vagas e as tarifas em tempo de execução. |
 | 0 | **Sair** | Encerra o programa. |
 
@@ -96,6 +97,7 @@ Menu principal:
 5 - Listar veículos no estacionamento
 6 - Histórico de saídas
 7 - Faturamento do dia
+8 - Gerenciar veículos
 9 - Configurações
 0 - Sair
 ```
@@ -337,7 +339,7 @@ Cada entrada gera um registro em `estacionamentos`; na saída, esse mesmo regist
 | **Create** | Cadastro de veículos e registro de entradas |
 | **Read** | Consulta de veículos, vagas, veículos estacionados, histórico e faturamento |
 | **Update** | Registro de saída (atualiza o registro de permanência) e configurações |
-| **Delete** | Não implementado nesta versão |
+| **Delete** | Exclua ou edite veículos/vagas |
 
 ---
 
@@ -376,7 +378,6 @@ Os arquivos `.h` (em `include/`) declaram as classes; os `.cpp` (em `src/`) impl
 
 - Interface apenas em terminal (sem GUI).
 - A placa é digitada manualmente (não há leitura automática).
-- Não há exclusão de veículos no banco de dados.
 
 ---
 
