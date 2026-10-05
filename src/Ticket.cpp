@@ -1,6 +1,7 @@
 #include "Ticket.h"
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 using namespace std;
 
 Ticket::Ticket(const string& placa, const string& tipo, const string& modelo,
@@ -15,32 +16,44 @@ void Ticket::definirSaida(const string& saida, double minutos, double valor) {
     this->valor = valor;
 }
 
+string Ticket::textoEntrada() const {
+    ostringstream texto;
+    texto << "==============================\n";
+    texto << "        TICKET DE ENTRADA     \n";
+    texto << "==============================\n";
+    texto << "Placa: " << placa << "\n";
+    texto << "Tipo: " << tipo << "\n";
+    texto << "Modelo: " << modelo << "\n";
+    texto << "Cor: " << cor << "\n";
+    texto << "Vaga: " << numeroVaga << "\n";
+    texto << "Entrada: " << entrada << "\n";
+    texto << "==============================\n";
+    return texto.str();
+}
+
+string Ticket::textoSaida() const {
+    ostringstream texto;
+    texto << "==============================\n";
+    texto << "         TICKET DE SAIDA      \n";
+    texto << "==============================\n";
+    texto << "Placa: " << placa << "\n";
+    texto << "Tipo: " << tipo << "\n";
+    texto << "Modelo: " << modelo << "\n";
+    texto << "Cor: " << cor << "\n";
+    texto << "Vaga: " << numeroVaga << "\n";
+    texto << "Entrada: " << entrada << "\n";
+    texto << "Saida: " << saida << "\n";
+    texto << "Tempo: " << minutos << " minutos\n";
+    texto << fixed << setprecision(2);
+    texto << "Valor pago: R$ " << valor << "\n";
+    texto << "==============================\n";
+    return texto.str();
+}
+
 void Ticket::imprimirEntrada() const {
-    cout << "\n==============================\n";
-    cout << "        TICKET DE ENTRADA     \n";
-    cout << "==============================\n";
-    cout << "Placa: " << placa << "\n";
-    cout << "Tipo: " << tipo << "\n";
-    cout << "Modelo: " << modelo << "\n";
-    cout << "Cor: " << cor << "\n";
-    cout << "Vaga: " << numeroVaga << "\n";
-    cout << "Entrada: " << entrada << "\n";
-    cout << "==============================\n";
+    cout << "\n" << textoEntrada();
 }
 
 void Ticket::imprimirSaida() const {
-    cout << "\n==============================\n";
-    cout << "         TICKET DE SAIDA      \n";
-    cout << "==============================\n";
-    cout << "Placa: " << placa << "\n";
-    cout << "Tipo: " << tipo << "\n";
-    cout << "Modelo: " << modelo << "\n";
-    cout << "Cor: " << cor << "\n";
-    cout << "Vaga: " << numeroVaga << "\n";
-    cout << "Entrada: " << entrada << "\n";
-    cout << "Saida: " << saida << "\n";
-    cout << "Tempo: " << minutos << " minutos\n";
-    cout << fixed << setprecision(2);
-    cout << "Valor pago: R$ " << valor << "\n";
-    cout << "==============================\n";
+    cout << "\n" << textoSaida();
 }
