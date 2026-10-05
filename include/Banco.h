@@ -42,6 +42,9 @@ public:
     bool buscarVeiculo(const string& placa, DadosVeiculo& veiculo);
     vector<VeiculoEstacionado> listarVeiculosEstacionados();
 
+    bool atualizarVeiculo(const std::string& placa, const std::string& modelo, const std::string& cor);
+    bool removerVeiculo(const std::string& placa);
+
     bool registrarEntrada(const string& placa, const string& horarioEntrada);
     bool registrarSaida(const string& placa, const string& horarioSaida, double valorPago);
     bool veiculoEstaEstacionado(const string& placa);

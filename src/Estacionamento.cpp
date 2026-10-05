@@ -165,6 +165,44 @@ bool Estacionamento::registrarSaida(const string& placa) {
     return true;
 }
 
+bool Estacionamento::editarVeiculo(const string& placa, const string& novoModelo,
+                                   const string& novaCor) {
+    DadosVeiculo dados;
+    if (!banco.buscarVeiculo(placa, dados)) {
+        cout << "Veiculo nao encontrado.\n";
+        return false;
+    }
+
+    if (!banco.atualizarVeiculo(placa, novoModelo, novaCor)) {
+        cout << "Nao foi possivel atualizar o veiculo.\n";
+        return false;
+    }
+
+    cout << "Veiculo atualizado com sucesso!\n";
+    return true;
+}
+
+bool Estacionamento::removerVeiculo(const string& placa) {
+    DadosVeiculo dados;
+    if (!banco.buscarVeiculo(placa, dados)) {
+        cout << "Veiculo nao encontrado.\n";
+        return false;
+    }
+
+    if (banco.veiculoEstaEstacionado(placa)) {
+        cout << "Nao e possivel remover um veiculo que esta estacionado.\n";
+        return false;
+    }
+
+    if (!banco.removerVeiculo(placa)) {
+        cout << "Nao foi possivel remover o veiculo.\n";
+        return false;
+    }
+
+    cout << "Veiculo removido com sucesso!\n";
+    return true;
+}
+
 void Estacionamento::consultarVeiculo(const string& placa) {
     DadosVeiculo veiculo;
 
@@ -315,3 +353,4 @@ double Estacionamento::getTaxaCarro() const { return taxaCarro; }
 double Estacionamento::getTaxaMoto() const { return taxaMoto; }
 int Estacionamento::getTotalVagasCarro() const { return static_cast<int>(vagasCarro.size()); }
 int Estacionamento::getTotalVagasMoto() const { return static_cast<int>(vagasMoto.size()); }
+
