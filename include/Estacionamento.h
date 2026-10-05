@@ -29,6 +29,10 @@ public:
                           const string& cor, const string& tipo);
     bool registrarSaida(const string& placa);
 
+    bool editarVeiculo(const std::string& placa, const std::string& novoModelo, const std::string& novaCor);
+    bool removerVeiculo(const std::string& placa);
+
+    void restaurarVagas();
     void consultarVeiculo(const string& placa);
     void listarVeiculos();
     void mostrarVagas() const;

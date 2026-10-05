@@ -153,6 +153,7 @@ void mostrarMenu() {
     cout << "5 - Listar veiculos no estacionamento\n";
     cout << "6 - Historico de saidas\n";
     cout << "7 - Faturamento do dia\n";
+    cout << "8 - Gerenciar veiculo\n";
     cout << "9 - Configuracoes\n";
     cout << "0 - Sair\n";
 }
@@ -203,6 +204,26 @@ int main() {
                 estacionamento.mostrarFaturamentoDoDia(
                     lerTexto("Data (AAAA-MM-DD): "));
                 break;
+
+            case 8: {
+                string placa, modelo, cor;
+                int opcao;
+                cout << "1 - Editar veiculo\n2 - Remover veiculo\n0 - Voltar\nOpcao: ";
+                cin >> opcao;
+                if (opcao == 0) break;
+                cout << "Placa: ";
+                cin >> placa;
+                if (opcao == 1) {
+                    cout << "Novo modelo: ";
+                    cin >> modelo;
+                    cout << "Nova cor: ";
+                    cin >> cor;
+                    estacionamento.editarVeiculo(placa, modelo, cor);
+                } else if (opcao == 2) {
+                    estacionamento.removerVeiculo(placa);
+                }
+                break;
+            }
 
             case 9:
                 menuConfiguracoes(estacionamento);

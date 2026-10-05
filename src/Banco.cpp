@@ -254,3 +254,28 @@ double Banco::calcularFaturamentoDoDia(const string& data) {
     sqlite3_finalize(stmt);
     return faturamento;
 }
+
+bool Banco::atualizarVeiculo(const std::string& placa, const std::string& modelo, const std::string& cor) {
+    sqlite3* db = static_cast<sqlite3*>(banco);
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "UPDATE veiculos SET modelo = ?, cor = ? WHERE placa = ?;";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+    sqlite3_bind_text(stmt, 1, modelo.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, cor.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, placa.c_str(), -1, SQLITE_TRANSIENT);
+    bool ok = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0;
+    sqlite3_finalize(stmt);
+    return ok;
+}
+
+bool Banco::removerVeiculo(const std::string& placa) {
+    if (veiculoEstaEstacionado(placa)) return false;
+    sqlite3* db = static_cast<sqlite3*>(banco);
+    sqlite3_stmt* stmt = nullptr;
+    const char* sql = "DELETE FROM veiculos WHERE placa = ?;";
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+    sqlite3_bind_text(stmt, 1, placa.c_str(), -1, SQLITE_TRANSIENT);
+    bool ok = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0;
+    sqlite3_finalize(stmt);
+    return ok;
+}
