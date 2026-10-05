@@ -385,8 +385,8 @@ Os arquivos `.h` (em `include/`) declaram as classes; os `.cpp` (em `src/`) impl
 | Item | Link |
 | ---- | ---- |
 | 📦 Repositório | https://github.com/MrTicos/Sistema-de-Gerenciamento-de-um-estacionamento- |
-| 🌐 Página do projeto | _em breve_ |
-| 📄 Relatório | _em breve_ |
+| 🌐 Página do projeto | https://mrticos.github.io/Sistema-de-Gerenciamento-de-um-estacionamento-/ |
+| 📄 Relatório | https://github.com/MrTicos/Sistema-de-Gerenciamento-de-um-estacionamento-/blob/main/docs/RELATORIO.md |
 | 🎥 Vídeo de apresentação | _em breve_ |
 
 ---
