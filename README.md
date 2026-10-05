@@ -111,12 +111,6 @@ Menu de configurações:
 0 - Voltar
 ```
 
-> 💡 **Sugestão:** adicione aqui um print ou GIF do terminal (ex.: `docs/demo.gif`) mostrando uma entrada e uma saída completas, com os tickets.
->
-> ```markdown
-> ![Demonstração](docs/demo.gif)
-> ```
-
 ---
 
 ## Regras de negócio
