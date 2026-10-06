@@ -21,6 +21,10 @@ public:
            const string& cor, int numeroVaga, const string& entrada);
 
     void definirSaida(const string& saida, double minutos, double valor);
+
+    string textoEntrada() const;
+    string textoSaida() const;
+
     void imprimirEntrada() const;
     void imprimirSaida() const;
 };
