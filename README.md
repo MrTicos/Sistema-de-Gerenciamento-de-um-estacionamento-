@@ -526,4 +526,4 @@ Os arquivos `.h` (em `include/`) declaram as classes do núcleo e os `.cpp` (em 
 | ---------- | ------ |
 | Thiago Silva | [@MrTicos](https://github.com/MrTicos) |
 | Gabriel Freitas | [@Gfal0](https://github.com/Gfal0) |
-| Miguel Nascimento | — |
+| Miguel Nascimento | [@migexx](https://github.com/migexx) |
