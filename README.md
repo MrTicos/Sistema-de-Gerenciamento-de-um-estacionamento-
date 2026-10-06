@@ -376,7 +376,6 @@ Os arquivos `.h` (em `include/`) declaram as classes; os `.cpp` (em `src/`) impl
 
 ## Limitações conhecidas
 
-- Interface apenas em terminal (sem GUI).
 - A placa é digitada manualmente (não há leitura automática).
 
 ---
