@@ -3,23 +3,30 @@
 
 #include "Veiculo.h"
 
-using namespace std;
-
-// Classe que representa uma caminhonete, herdada da classe base Veiculo.
+/**
+ * Caminhonete. Usa vaga de carro (a vaga é grande), mas paga um adicional por
+ * ocupar mais espaço.
+ */
 class Caminhonete : public Veiculo {
 public:
-    // Construtor: recebe os dados da caminhonete e os repassa para a classe pai inicializar.
-    Caminhonete(const string& placa, const string& modelo, const string& cor, double taxaHora);
+    /// Adicional cobrado sobre a tarifa normal (0.20 = 20%).
+    static constexpr double ADICIONAL = 0.20;
 
-    // Implementações dos métodos obrigatórios da classe base Veiculo:
-    
-    // Sobrescreve o método do pai para retornar o texto específico "Caminhonete".
-    string getTipo() const override;
-    
-    // Implementa a regra específica de cálculo do valor do estacionamento para caminhonetes.
+    /// @copydoc Veiculo::Veiculo
+    Caminhonete(const std::string& placa, const std::string& modelo,
+                const std::string& cor, double taxaHora);
+
+    /// @return "Caminhonete".
+    std::string getTipo() const override;
+
+    /**
+     * Tarifa da caminhonete: minutos x (taxaHora / 60) x (1 + ADICIONAL).
+     * @param minutos Tempo de permanência, em minutos.
+     * @return Valor a pagar, em reais.
+     */
     double calcularTarifa(double minutos) const override;
-    
-    // Retorna falso, pois uma caminhonete não pode usar a vaga de moto.
+
+    /// @return false: caminhonete usa vaga de carro.
     bool podeUsarVagaMoto() const override;
 };
 

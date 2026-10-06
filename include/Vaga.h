@@ -3,35 +3,41 @@
 
 #include <string>
 
-// Classe que representa uma vaga física dentro do estacionamento.
+/**
+ * Uma vaga do estacionamento: tem número, tipo e sabe se está ocupada (e por qual placa).
+ * Os atributos são privados: só se altera o estado pelos métodos ocupar() e liberar().
+ */
 class Vaga {
 private:
-    // Atributos privados para proteger o estado da vaga.
-    int numero;
-    std::string tipo;
-    bool ocupada;
-    std::string placaVeiculo;
+    int numero;                  ///< Número da vaga (começa em 1).
+    std::string tipo;            ///< Tipo da vaga ("Carro" ou "Moto").
+    bool ocupada;                ///< true se há veículo na vaga.
+    std::string placaVeiculo;    ///< Placa de quem ocupa (vazia se a vaga está livre).
 
 public:
-    // Construtor: cria a vaga definindo seu número e tipo.
+    /**
+     * Cria uma vaga livre.
+     * @param numero Número da vaga.
+     * @param tipo   Tipo da vaga ("Carro" ou "Moto").
+     */
     Vaga(int numero, const std::string& tipo);
 
-    // Métodos de leitura para consultar os dados da vaga.
+    /// @return O número da vaga.
     int getNumero() const;
+    /// @return O tipo da vaga.
     std::string getTipo() const;
-    
-    // Retorna true se a vaga tiver um veículo, ou false se estiver livre.
+    /// @return true se a vaga está ocupada.
     bool estaOcupada() const;
-    
-    // Retorna a placa do veículo que está na vaga (ou vazio se estiver livre).
+    /// @return A placa do veículo que ocupa a vaga (vazia se livre).
     std::string getPlacaVeiculo() const;
 
-    // Métodos de ação que alteram o estado da vaga:
-    
-    // Marca a vaga como ocupada e registra a placa do veículo nela.
+    /**
+     * Marca a vaga como ocupada.
+     * @param placa Placa do veículo que está estacionando.
+     */
     void ocupar(const std::string& placa);
-    
-    // Marca a vaga como livre e apaga o registro da placa.
+
+    /// Marca a vaga como livre e esquece a placa.
     void liberar();
 };
 

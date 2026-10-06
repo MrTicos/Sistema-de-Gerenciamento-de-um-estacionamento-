@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 
 namespace {
+// std::string (núcleo) -> QString (Qt)
 QString texto(const std::string& s) {
     return QString::fromUtf8(s.c_str());
 }
@@ -20,6 +21,7 @@ JanelaPrincipal::JanelaPrincipal(Estacionamento& estacionamento, QWidget* pai)
     setWindowTitle("Estacionamento");
     resize(900, 460);
 
+    // ----- Lado esquerdo: formulário e botões -----
     auto* grupoForm = new QGroupBox("Veículo");
     grupoForm->setFixedWidth(300);
     auto* layoutForm = new QVBoxLayout(grupoForm);
@@ -29,7 +31,8 @@ JanelaPrincipal::JanelaPrincipal(Estacionamento& estacionamento, QWidget* pai)
     campoModelo = new QLineEdit;
     campoCor = new QLineEdit;
     comboTipo = new QComboBox;
-    comboTipo->addItems({"Carro", "Moto", "Caminhonete"});  
+    comboTipo->addItems({"Carro", "Moto", "Caminhonete"});   // mesmos nomes usados no banco
+
     auto* form = new QFormLayout;
     form->addRow("Placa:", campoPlaca);
     form->addRow("Modelo:", campoModelo);
@@ -47,6 +50,7 @@ JanelaPrincipal::JanelaPrincipal(Estacionamento& estacionamento, QWidget* pai)
     aviso->setWordWrap(true);
     layoutForm->addWidget(aviso);
 
+    // ----- Lado direito: vagas livres e tabela -----
     textoVagas = new QLabel;
     QFont fonte = textoVagas->font();
     fonte.setBold(true);
@@ -60,6 +64,7 @@ JanelaPrincipal::JanelaPrincipal(Estacionamento& estacionamento, QWidget* pai)
     tabela->verticalHeader()->setVisible(false);
     tabela->setWordWrap(false);
     tabela->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    // Vaga e Entrada ocupam só o espaço do conteúdo (a data não quebra em duas linhas).
     tabela->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     tabela->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
 
@@ -74,6 +79,7 @@ JanelaPrincipal::JanelaPrincipal(Estacionamento& estacionamento, QWidget* pai)
     layoutPrincipal->addLayout(layoutDireita, 1);
     setCentralWidget(central);
 
+    // Liga os botões aos métodos (sinais e slots do Qt).
     connect(botaoEntrada, &QPushButton::clicked, this, &JanelaPrincipal::registrarEntrada);
     connect(botaoSaida, &QPushButton::clicked, this, &JanelaPrincipal::registrarSaida);
     connect(tabela, &QTableWidget::cellClicked, this, [this](int linha, int) { usarPlacaDaLinha(linha); });
@@ -81,6 +87,7 @@ JanelaPrincipal::JanelaPrincipal(Estacionamento& estacionamento, QWidget* pai)
     atualizar();
 }
 
+// Mostra as vagas livres e preenche a tabela com quem está no pátio.
 void JanelaPrincipal::atualizar() {
     ResumoVagas vagas = estacionamento.resumoVagas();
     textoVagas->setText(QString("Vagas livres  |  Carro/Caminhonete: %1 de %2  |  Moto: %3 de %4")
@@ -103,8 +110,9 @@ void JanelaPrincipal::atualizar() {
 }
 
 void JanelaPrincipal::registrarEntrada() {
+    // A placa é guardada sem espaços nas pontas e em maiúsculas.
     std::string placa = campoPlaca->text().trimmed().toUpper().toStdString();
-    Ticket ticket("", "", "", "", 0, "");   
+    Ticket ticket("", "", "", "", 0, "");   // a lógica preenche este ticket
 
     Resultado resultado = estacionamento.registrarEntrada(
         placa, campoModelo->text().trimmed().toStdString(),
@@ -116,6 +124,7 @@ void JanelaPrincipal::registrarEntrada() {
         return;
     }
 
+    // Limpa o formulário para o próximo veículo.
     campoPlaca->clear();
     campoModelo->clear();
     campoCor->clear();
@@ -145,6 +154,7 @@ void JanelaPrincipal::usarPlacaDaLinha(int linha) {
     campoPlaca->setText(tabela->item(linha, 1)->text());
 }
 
+// Mostra o ticket numa caixa de mensagem, com fonte de largura fixa (parece um comprovante).
 void JanelaPrincipal::mostrarTicket(const QString& titulo, const QString& conteudo) {
     QMessageBox caixa(QMessageBox::Information, titulo, conteudo, QMessageBox::Ok, this);
     caixa.setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));

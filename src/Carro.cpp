@@ -1,21 +1,21 @@
 #include "Carro.h"
 using namespace std;
 
-// Construtor: recebe os dados e os repassa imediatamente para o construtor da classe pai (Veiculo).
+// Repassa os dados para o construtor da classe base (Veiculo).
 Carro::Carro(const string& placa, const string& modelo, const string& cor, double taxaHora)
     : Veiculo(placa, modelo, cor, taxaHora) {}
 
-// Retorna o texto de identificação do veículo.
 string Carro::getTipo() const {
     return "Carro";
 }
 
-// Implementa o cálculo da tarifa de estacionamento, baseando no tempo de permanência em minutos e na taxa por hora do veículo.
+// Regra do carro: proporcional ao tempo, sem tolerância e sem adicional.
+// Exemplo: 120 minutos a R$ 10,00/hora = R$ 20,00.
 double Carro::calcularTarifa(double minutos) const {
     return minutos * (taxaHora / 60.0);
 }
 
-// Retorna falso, pois um carro não pode usar a vaga de moto.
+// Carro estaciona em vaga de carro.
 bool Carro::podeUsarVagaMoto() const {
     return false;
 }

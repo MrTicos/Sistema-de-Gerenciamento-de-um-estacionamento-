@@ -21,7 +21,7 @@ Projeto desenvolvido para a disciplina **Estruturas de Dados Orientadas a Objeto
 
 - [Interface gráfica](#interface-gráfica)
 - [Funcionalidades](#funcionalidades)
-- [Como executar](#como-executar)
+- [Como compilar e executar](#como-compilar-e-executar)
 - [Regras de negócio](#regras-de-negócio)
 - [Conceitos de POO aplicados](#conceitos-de-poo-aplicados)
 - [Arquitetura](#arquitetura)
@@ -98,29 +98,31 @@ A janela não contém regras de negócio: ela apenas chama os métodos de `Estac
 
 ---
 
-## Como executar
+## Como compilar e executar
 
-### Requisitos
+O projeto gera **dois programas** a partir do mesmo código e do mesmo banco de dados:
 
-- Compilador com suporte a **C++17**
+| Programa | O que é | Precisa do Qt? |
+| -------- | ------- | :------------: |
+| `estacionamento` | Versão de terminal (menus) | Não |
+| `estacionamento_gui` | Versão com janela | Sim (Qt 6) |
+
+Se o Qt não estiver instalado, o CMake avisa `Qt6 nao encontrado` e compila só a versão de terminal, sem erro.
+
+### 1. Requisitos
+
+- Compilador com suporte a **C++17** (g++ ou clang++)
 - **CMake 3.20** ou superior
 - **SQLite3** (biblioteca e cabeçalhos de desenvolvimento)
-- **Qt 6 (módulo Widgets)**, necessário apenas para a interface gráfica. Se o CMake não encontrar o Qt 6, ele compila somente a versão de terminal e avisa: `Qt6 nao encontrado: compilando apenas a versao de terminal.`
+- **Qt 6 Widgets** (opcional, só para a janela)
+
+### 2. Instalar as dependências
 
 <details>
-<summary><b>Linux</b></summary>
+<summary><b>Linux (Debian/Ubuntu)</b></summary>
 
 ```bash
-# Dependências (Debian/Ubuntu)
 sudo apt install build-essential cmake libsqlite3-dev qt6-base-dev
-
-# Compilar
-cmake -S . -B build
-cmake --build build
-
-# Executar
-./build/estacionamento        # terminal
-./build/estacionamento_gui    # interface gráfica
 ```
 
 </details>
@@ -128,28 +130,56 @@ cmake --build build
 <details>
 <summary><b>Windows (MSYS2 / MinGW)</b></summary>
 
-```powershell
-# Dependência da interface gráfica (terminal do MSYS2 UCRT64)
-pacman -S mingw-w64-ucrt-x86_64-qt6-base
+Instale o [MSYS2](https://www.msys2.org/), abra o terminal **MSYS2 UCRT64** e rode:
 
-# Compilar
-cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/msys64/ucrt64"
-cmake --build build
-
-# Executar
-.\build\estacionamento.exe        # terminal
-.\build\estacionamento_gui.exe    # interface gráfica
+```bash
+pacman -S mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake \
+          mingw-w64-ucrt-x86_64-sqlite3 mingw-w64-ucrt-x86_64-qt6-base
 ```
-
-Se a janela não abrir por falta de DLLs do Qt, execute pelo terminal do MSYS2 UCRT64 ou acrescente `C:\msys64\ucrt64\bin` ao `PATH`.
 
 </details>
 
-### Banco de dados
+### 3. Baixar o código
 
-Ao iniciar, o programa abre (ou cria) o arquivo `estacionamento.db` no diretório de execução, e as tabelas são criadas automaticamente na primeira vez.
+```bash
+git clone https://github.com/MrTicos/Sistema-de-Gerenciamento-de-um-estacionamento-.git
+cd Sistema-de-Gerenciamento-de-um-estacionamento-
+```
 
-Na interface gráfica, é possível usar outro arquivo definindo a variável de ambiente `ESTACIONAMENTO_DB`, o que é útil para testes e demonstrações sem mexer nos dados reais:
+### 4. Compilar
+
+```bash
+# Linux
+cmake -S . -B build
+cmake --build build
+
+# Windows (no terminal MSYS2 UCRT64)
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/msys64/ucrt64"
+cmake --build build
+```
+
+### 5. Executar
+
+Execute **a partir da pasta do projeto**, para que os dois programas usem o mesmo arquivo `estacionamento.db`:
+
+```bash
+./build/estacionamento_gui     # janela            (Windows: ./build/estacionamento_gui.exe)
+./build/estacionamento         # terminal          (Windows: ./build/estacionamento.exe)
+```
+
+> **Banco de dados:** ao iniciar, o programa abre (ou cria) o arquivo `estacionamento.db` no diretório de execução e cria as tabelas sozinho. Bancos de versões anteriores são atualizados automaticamente, sem perder dados.
+
+### Problemas comuns
+
+| Mensagem ou sintoma | Solução |
+| ------------------- | ------- |
+| `cmake: command not found` | Instale o CMake (passo 2). |
+| `Could NOT find SQLite3` | Instale `libsqlite3-dev` (Linux) ou `mingw-w64-ucrt-x86_64-sqlite3` (Windows). |
+| `Qt6 nao encontrado` | Não é erro: só o terminal foi compilado. Para a janela, instale o Qt 6 e apague a pasta `build` antes de compilar de novo. |
+| Windows: a janela não abre ou pede uma DLL | Execute pelo terminal **MSYS2 UCRT64** (onde as bibliotecas do Qt estão no PATH). |
+| Mudou de ideia ou deu erro estranho | Apague a pasta `build` e repita o passo 4. |
+
+**Outro arquivo de banco (interface gráfica).** Defina a variável de ambiente `ESTACIONAMENTO_DB` para usar outro arquivo, útil em testes e demonstrações sem mexer nos dados reais:
 
 ```powershell
 # Windows (PowerShell)
@@ -177,9 +207,15 @@ ESTACIONAMENTO_DB=demo.db ./build/estacionamento_gui
 
 O estacionamento inicia com 20 vagas de carro e 10 de moto. Esses números podem ser alterados nas configurações.
 
-**Tarifas.** Carros e caminhonetes compartilham a mesma tarifa; motos têm tarifa própria. Ambas podem ser alteradas nas configurações.
+**Tarifas.** Carros e caminhonetes usam a taxa por hora de carro; motos têm taxa própria (padrão: R$ 10,00 e R$ 5,00 por hora, alteráveis no menu de configurações). Além da taxa, **cada tipo de veículo tem a sua regra de cobrança**:
 
-**Cobrança.** O tempo de permanência é calculado em **minutos**, e a cobrança é proporcional a esse tempo.
+| Tipo | Vaga | Regra de cobrança | Exemplo |
+| ---- | ---- | ----------------- | ------- |
+| Carro | Carro | Proporcional ao tempo: minutos x taxa / 60 | 120 min a R$ 10,00/h = R$ 20,00 |
+| Moto | Moto | **Até 15 minutos é grátis**; acima disso paga o tempo total, proporcional | 10 min = R$ 0,00; 30 min a R$ 5,00/h = R$ 2,50 |
+| Caminhonete | Carro | Proporcional ao tempo **+ 20%** (ocupa mais espaço) | 60 min a R$ 10,00/h = R$ 12,00 |
+
+**Cobrança.** O tempo de permanência é calculado em **minutos**.
 
 **Gerenciamento de veículos.** É possível editar o modelo e a cor de um veículo cadastrado. A remoção do cadastro só é permitida se o veículo não estiver estacionado, e o histórico de estadias é mantido.
 
@@ -202,7 +238,7 @@ O estacionamento inicia com 20 vagas de carro e 10 de moto. Esses números podem
 | -------- | ------------ |
 | **Abstração** | `Veiculo` é uma classe abstrata que define o contrato comum a todos os veículos. |
 | **Herança** | `Carro`, `Moto` e `Caminhonete` herdam de `Veiculo`; `JanelaPrincipal` herda de `QMainWindow`. |
-| **Polimorfismo** | Métodos virtuais puros, como `calcularTarifa`, são implementados de forma diferente por cada classe derivada. Em `Estacionamento::registrarSaida`, a chamada é feita por um `unique_ptr<Veiculo>`. |
+| **Polimorfismo** | `calcularTarifa` tem uma regra diferente em cada classe derivada (carro proporcional; moto com 15 min de tolerância; caminhonete com +20%). `Estacionamento` chama `veiculo->calcularTarifa()` e `veiculo->podeUsarVagaMoto()` sem saber qual é o tipo; o único `if` sobre o nome do tipo está na fábrica `criarVeiculo`. |
 | **Encapsulamento** | Atributos com acesso controlado (`private`/`protected`) e manipulados por métodos públicos. |
 | **Fábrica simples** | `Estacionamento::criarVeiculo` decide qual classe concreta instanciar e devolve sempre um `Veiculo`. |
 | **Separação de responsabilidades** | A interface (`JanelaPrincipal`) só exibe e coleta dados; as regras ficam em `Estacionamento` e o acesso ao SQLite, em `Banco`. |
@@ -210,10 +246,13 @@ O estacionamento inicia com 20 vagas de carro e 10 de moto. Esses números podem
 ```cpp
 // Veiculo.h: cada tipo de veículo define sua própria regra de cobrança
 virtual double calcularTarifa(double minutos) const = 0;
+```
 
-// Estacionamento.cpp: a versão executada depende do objeto real
-unique_ptr<Veiculo> veiculo = criarVeiculo(dados);
-double valor = veiculo->calcularTarifa(minutos);
+```cpp
+// Estacionamento.cpp: quem escolhe o grupo de vagas é o próprio veículo
+vector<Vaga>& Estacionamento::vagasPara(const Veiculo& veiculo) {
+    return veiculo.podeUsarVagaMoto() ? vagasMoto : vagasCarro;
+}
 ```
 
 ---
@@ -395,7 +434,7 @@ Toda a comunicação com o SQLite passa pela classe `Banco`.
 
 ```mermaid
 erDiagram
-    veiculos ||--o{ estacionamentos : "possui"
+    veiculos ||..o{ estacionamentos : "placa (sem FK)"
     veiculos {
         TEXT placa PK
         TEXT modelo
@@ -404,14 +443,15 @@ erDiagram
     }
     estacionamentos {
         INTEGER id PK
-        TEXT placa FK
+        TEXT placa
+        INTEGER vaga
         TEXT horario_entrada
         TEXT horario_saida
         REAL valor_pago
     }
 ```
 
-Cada entrada gera um registro em `estacionamentos`; na saída, esse mesmo registro recebe `horario_saida` e `valor_pago`.
+Cada entrada gera um registro em `estacionamentos`; na saída, esse mesmo registro recebe `horario_saida` e `valor_pago`. A coluna `vaga` guarda o número da vaga ocupada, o que permite restaurar as vagas ao reabrir o programa. A placa do histórico é guardada como texto, **sem chave estrangeira**, para que o cadastro possa ser removido sem apagar o histórico; bancos antigos são migrados automaticamente.
 
 ### Operações de CRUD
 

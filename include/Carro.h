@@ -3,23 +3,27 @@
 
 #include "Veiculo.h"
 
-using namespace std;
-
-// Classe que representa um carro, herdada da classe base Veiculo.
+/**
+ * Carro de passeio. Usa vaga de carro e paga a tarifa proporcional ao tempo,
+ * sem tolerância e sem adicional.
+ */
 class Carro : public Veiculo {
 public:
-    // Construtor: recebe os dados do carro e os repassa para a classe pai inicializar.
-    Carro(const string& placa, const string& modelo, const string& cor, double taxaHora);
+    /// @copydoc Veiculo::Veiculo
+    Carro(const std::string& placa, const std::string& modelo,
+          const std::string& cor, double taxaHora);
 
-    // Implementações dos métodos obrigatórios da classe base Veiculo:
-    
-    // Sobrescreve o método do pai para retornar o texto específico "Carro".
-    string getTipo() const override;
-    
-    // Implementa a regra específica de cálculo do valor do estacionamento para carros.
+    /// @return "Carro".
+    std::string getTipo() const override;
+
+    /**
+     * Tarifa do carro: minutos x (taxaHora / 60).
+     * @param minutos Tempo de permanência, em minutos.
+     * @return Valor a pagar, em reais.
+     */
     double calcularTarifa(double minutos) const override;
-    
-    // Retorna falso, pois um carro não pode usar a vaga de moto.
+
+    /// @return false: carro usa vaga de carro.
     bool podeUsarVagaMoto() const override;
 };
 

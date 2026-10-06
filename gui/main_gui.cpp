@@ -1,3 +1,5 @@
+// Versão com JANELA do sistema (Qt 6). A versão de terminal está em src/main.cpp.
+// As duas versões usam o mesmo núcleo (Estacionamento + Banco) e o mesmo arquivo .db.
 #include "Banco.h"
 #include "Estacionamento.h"
 #include "JanelaPrincipal.h"
@@ -7,8 +9,9 @@
 
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
-    app.setStyle("Fusion");   
+    app.setStyle("Fusion");   // aparência igual em Windows e Linux
 
+    // Variável de ambiente opcional para escolher o banco (padrão: o mesmo do terminal).
     QString arquivoBanco = qEnvironmentVariable("ESTACIONAMENTO_DB", "estacionamento.db");
 
     Banco banco(arquivoBanco.toStdString());

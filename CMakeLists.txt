@@ -11,6 +11,9 @@ endif()
 
 find_package(SQLite3 REQUIRED)
 
+# ---------------------------------------------------------------
+# Núcleo: classes de lógica + banco. Usado pelo terminal e pela janela.
+# ---------------------------------------------------------------
 add_library(nucleo STATIC
     src/Banco.cpp
     src/Caminhonete.cpp
@@ -24,14 +27,18 @@ add_library(nucleo STATIC
 target_include_directories(nucleo PUBLIC include)
 target_link_libraries(nucleo PUBLIC SQLite::SQLite3)
 
-
+# Versão de terminal
 add_executable(estacionamento src/main.cpp)
 target_link_libraries(estacionamento PRIVATE nucleo)
 
+# ---------------------------------------------------------------
+# Versão com interface gráfica (Qt 6). É opcional: sem Qt instalado,
+# o projeto compila normalmente só com a versão de terminal.
+# ---------------------------------------------------------------
 find_package(Qt6 COMPONENTS Widgets QUIET)
 
 if(Qt6_FOUND)
-    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOMOC ON)   # o Qt gera o código dos sinais e slots sozinho
 
     add_executable(estacionamento_gui
         gui/main_gui.cpp
