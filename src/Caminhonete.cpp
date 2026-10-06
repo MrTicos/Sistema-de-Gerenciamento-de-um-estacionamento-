@@ -1,21 +1,21 @@
 #include "Caminhonete.h"
 using namespace std;
 
-// Construtor: recebe os dados e os repassa imediatamente para o construtor da classe pai (Veiculo).
+// Repassa os dados para o construtor da classe base (Veiculo).
 Caminhonete::Caminhonete(const string& placa, const string& modelo, const string& cor, double taxaHora)
     : Veiculo(placa, modelo, cor, taxaHora) {}
 
-// Retorna o texto de identificação do veículo.
 string Caminhonete::getTipo() const {
     return "Caminhonete";
 }
 
-// Implementa o cálculo da tarifa de estacionamento, baseando no tempo de permanência em minutos e na taxa por hora do veículo.
+// Regra da caminhonete: tarifa normal + 20% (ocupa mais espaço).
+// Exemplo: 60 minutos a R$ 10,00/hora = R$ 12,00.
 double Caminhonete::calcularTarifa(double minutos) const {
-    return minutos * (taxaHora / 60.0);
+    return minutos * (taxaHora / 60.0) * (1.0 + ADICIONAL);
 }
 
-// Retorna falso, pois uma caminhonete não pode usar a vaga de moto.
+// Caminhonete estaciona em vaga de carro.
 bool Caminhonete::podeUsarVagaMoto() const {
     return false;
 }

@@ -3,23 +3,30 @@
 
 #include "Veiculo.h"
 
-using namespace std;
-
-// Classe que representa uma moto, herdada da classe base Veiculo.
+/**
+ * Moto. Usa vaga de moto e tem uma tolerância gratuita de curta permanência.
+ */
 class Moto : public Veiculo {
 public:
-    // Construtor: recebe os dados da moto e os repassa para a classe pai inicializar.
-    Moto(const string& placa, const string& modelo, const string& cor, double taxaHora);
+    /// Permanência (em minutos) até a qual a moto não paga nada.
+    static constexpr double TOLERANCIA_MINUTOS = 15.0;
 
-    // Implementações dos métodos obrigatórios da classe base Veiculo:
-    
-    // Sobrescreve o método do pai para retornar o texto específico "Moto".
-    string getTipo() const override;
-    
-    // Implementa a regra específica de cálculo do valor do estacionamento para motos.
+    /// @copydoc Veiculo::Veiculo
+    Moto(const std::string& placa, const std::string& modelo,
+         const std::string& cor, double taxaHora);
+
+    /// @return "Moto".
+    std::string getTipo() const override;
+
+    /**
+     * Tarifa da moto: até TOLERANCIA_MINUTOS não paga; acima disso paga o tempo
+     * total, proporcional: minutos x (taxaHora / 60).
+     * @param minutos Tempo de permanência, em minutos.
+     * @return Valor a pagar, em reais.
+     */
     double calcularTarifa(double minutos) const override;
-    
-    // Retorna verdadeiro, pois uma moto obviamente PODE usar a vaga de moto.
+
+    /// @return true: moto usa vaga de moto.
     bool podeUsarVagaMoto() const override;
 };
 

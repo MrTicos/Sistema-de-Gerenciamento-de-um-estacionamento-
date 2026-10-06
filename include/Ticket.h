@@ -2,38 +2,53 @@
 #define TICKET_H
 
 #include <string>
-using namespace std;
 
-// Classe responsável por gerar e formatar os recibos (tickets) de entrada e saída do veículo.
+/**
+ * Comprovante de entrada e de saída de um veículo.
+ * Guarda os dados e monta o texto do comprovante; quem decide onde mostrar
+ * (terminal ou janela) é quem chama.
+ */
 class Ticket {
 private:
-    // Dados do veículo e do momento da entrada.
-    string placa;
-    string tipo;
-    string modelo;
-    string cor;
+    std::string placa;
+    std::string tipo;
+    std::string modelo;
+    std::string cor;
     int numeroVaga;
-    string entrada;
-    
-    // Dados preenchidos apenas no encerramento da permanência.
-    string saida;
-    double minutos;
-    double valor;
+    std::string entrada;     ///< Horário de entrada (AAAA-MM-DD HH:MM:SS).
+    std::string saida;       ///< Horário de saída (vazio até definirSaida()).
+    double minutos;          ///< Tempo de permanência.
+    double valor;            ///< Valor pago, em reais.
 
 public:
-    // Construtor: inicializa o ticket com os dados do veículo e da entrada.
-    Ticket(const string& placa, const string& tipo, const string& modelo,
-           const string& cor, int numeroVaga, const string& entrada);
+    /**
+     * Cria o ticket no momento da entrada.
+     * @param placa      Placa do veículo.
+     * @param tipo       Tipo do veículo.
+     * @param modelo     Modelo do veículo.
+     * @param cor        Cor do veículo.
+     * @param numeroVaga Número da vaga ocupada.
+     * @param entrada    Horário de entrada.
+     */
+    Ticket(const std::string& placa, const std::string& tipo, const std::string& modelo,
+           const std::string& cor, int numeroVaga, const std::string& entrada);
 
-    // Registra as informações do encerramento (horário de saída, tempo total e valor).
-    void definirSaida(const string& saida, double minutos, double valor);
+    /**
+     * Completa o ticket com os dados da saída.
+     * @param saida   Horário de saída.
+     * @param minutos Tempo de permanência, em minutos.
+     * @param valor   Valor a pagar, em reais.
+     */
+    void definirSaida(const std::string& saida, double minutos, double valor);
 
-    // Métodos para montagem e formatação do texto dos recibos.
-    string textoEntrada() const;
-    string textoSaida() const;
+    /// @return O texto do comprovante de entrada.
+    std::string textoEntrada() const;
+    /// @return O texto do comprovante de saída.
+    std::string textoSaida() const;
 
-    // Métodos para exibição dos recibos no terminal.
+    /// Imprime o comprovante de entrada no terminal.
     void imprimirEntrada() const;
+    /// Imprime o comprovante de saída no terminal.
     void imprimirSaida() const;
 };
 

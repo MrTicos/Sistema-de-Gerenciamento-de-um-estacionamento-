@@ -4,71 +4,143 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
-// Estruturas de dados (DTOs) usadas para agrupar e transportar informações do banco.
+/// Uma saída já registrada (linha do histórico).
 struct RegistroSaida {
     int id;
-    string placa;
-    string horarioEntrada;
-    string horarioSaida;
+    std::string placa;
+    std::string horarioEntrada;
+    std::string horarioSaida;
     double valorPago;
 };
 
+/// Dados cadastrais de um veículo.
 struct DadosVeiculo {
-    string placa;
-    string modelo;
-    string cor;
-    string tipo;
+    std::string placa;
+    std::string modelo;
+    std::string cor;
+    std::string tipo;    ///< "Carro", "Moto" ou "Caminhonete".
 };
 
+/// Um veículo que está no estacionamento agora.
 struct VeiculoEstacionado {
     DadosVeiculo veiculo;
-    int vaga;
-    string horarioEntrada;
+    int vaga;                      ///< Número da vaga (0 se o banco não souber).
+    std::string horarioEntrada;
 };
 
-// Classe responsável por gerenciar a conexão e as operações com o banco de dados SQLite.
+/**
+ * Único ponto de acesso ao banco de dados SQLite. Implementa o CRUD.
+ *
+ * Nenhuma outra classe conhece o SQLite: o ponteiro da conexão fica escondido
+ * (void*) para que quem inclui este arquivo não precise incluir sqlite3.h.
+ * Todos os comandos SQL usam parâmetros ("?"), nunca texto concatenado
+ * (evita SQL injection).
+ */
 class Banco {
 private:
-    // Ponteiro genérico para a conexão com o SQLite (oculta a dependência da biblioteca no .h).
-    void* banco;
-    
-    // Método interno para executar comandos SQL simples (sem retorno de dados), como CREATE TABLE.
-    bool executar(const string& sql);
+    void* banco;                                   ///< Conexão SQLite (sqlite3*), escondida.
+    bool executar(const std::string& sql);         ///< Executa SQL sem parâmetros.
+    bool historicoPrecisaMigrar();                 ///< Detecta tabela de histórico em formato antigo.
+    bool migrarHistorico();                        ///< Converte o formato antigo para o atual.
 
 public:
-    // Construtor: recebe o nome do arquivo do banco e tenta abrir a conexão.
-    Banco(const string& nomeArquivo);
-    
-    // Destrutor: garante que a conexão com o banco seja fechada ao encerrar o programa.
+    /**
+     * Abre (ou cria) o arquivo do banco.
+     * @param nomeArquivo Caminho do arquivo .db.
+     */
+    Banco(const std::string& nomeArquivo);
+
+    /// Fecha a conexão.
     ~Banco();
 
-    // Cria as tabelas necessárias (veiculos e estacionamentos) caso não existam.
+    /**
+     * Cria as tabelas se ainda não existirem e atualiza bancos de versões antigas.
+     * @return true se o banco ficou pronto para uso.
+     */
     bool criarTabelas();
 
-    // Operações de CRUD (Criar, Ler, Atualizar, Apagar) para os Veículos:
-    bool cadastrarVeiculo(const DadosVeiculo& veiculo);
-    bool buscarVeiculo(const string& placa, DadosVeiculo& veiculo);
-    vector<VeiculoEstacionado> listarVeiculosEstacionados();
-    bool atualizarVeiculo(const std::string& placa, const std::string& modelo, const std::string& cor);
-    bool removerVeiculo(const std::string& placa);
+    // ----- CREATE -----
 
-    // Operações de fluxo do Estacionamento:
-    bool registrarEntrada(const string& placa, const string& horarioEntrada);
-    bool registrarSaida(const string& placa, const string& horarioSaida, double valorPago);
-    
-    // Retorna verdadeiro se o veículo não tiver um horário de saída registrado.
-    bool veiculoEstaEstacionado(const string& placa);
-    
-    // Retorna o horário em que o veículo entrou no estacionamento.
-    string buscarEntrada(const string& placa);
-    
-    // Lista todas as movimentações de veículos que já saíram do estacionamento.
-    vector<RegistroSaida> listarHistorico();
-    
-    // Soma o valor de todos os estacionamentos encerrados na data informada.
-    double calcularFaturamentoDoDia(const string& data);
+    /**
+     * Cadastra um veículo novo.
+     * @param veiculo Dados do veículo.
+     * @return true se cadastrou (false, por exemplo, se a placa já existe).
+     */
+    bool cadastrarVeiculo(const DadosVeiculo& veiculo);
+
+    /**
+     * Registra a entrada de um veículo no estacionamento.
+     * @param placa          Placa do veículo.
+     * @param horarioEntrada Horário (AAAA-MM-DD HH:MM:SS).
+     * @param vaga           Número da vaga ocupada (guardado para restaurar a ocupação ao reabrir o programa).
+     * @return true se gravou.
+     */
+    bool registrarEntrada(const std::string& placa, const std::string& horarioEntrada, int vaga);
+
+    // ----- READ -----
+
+    /**
+     * Busca o cadastro de um veículo pela placa.
+     * @param placa   Placa procurada.
+     * @param veiculo Preenchido com os dados se encontrar.
+     * @return true se encontrou.
+     */
+    bool buscarVeiculo(const std::string& placa, DadosVeiculo& veiculo);
+
+    /// @return Os veículos que estão no estacionamento agora (ordenados por placa).
+    std::vector<VeiculoEstacionado> listarVeiculosEstacionados();
+
+    /**
+     * @param placa Placa do veículo.
+     * @return true se o veículo está no estacionamento agora (entrou e ainda não saiu).
+     */
+    bool veiculoEstaEstacionado(const std::string& placa);
+
+    /**
+     * @param placa Placa do veículo estacionado.
+     * @return Horário de entrada da permanência em andamento (vazio se não houver).
+     */
+    std::string buscarEntrada(const std::string& placa);
+
+    /// @return Todas as saídas registradas, da mais recente para a mais antiga.
+    std::vector<RegistroSaida> listarHistorico();
+
+    /**
+     * Soma o que foi pago nas saídas de um dia.
+     * @param data Dia no formato AAAA-MM-DD.
+     * @return Total faturado no dia, em reais (0 se não houve saídas).
+     */
+    double calcularFaturamentoDoDia(const std::string& data);
+
+    // ----- UPDATE -----
+
+    /**
+     * Atualiza modelo e cor de um veículo cadastrado.
+     * @param placa  Placa do veículo (não muda).
+     * @param modelo Novo modelo.
+     * @param cor    Nova cor.
+     * @return true se atualizou.
+     */
+    bool atualizarVeiculo(const std::string& placa, const std::string& modelo, const std::string& cor);
+
+    /**
+     * Registra a saída de um veículo (fecha a permanência em andamento).
+     * @param placa        Placa do veículo.
+     * @param horarioSaida Horário de saída.
+     * @param valorPago    Valor cobrado, em reais.
+     * @return true se havia uma permanência em andamento e ela foi fechada.
+     */
+    bool registrarSaida(const std::string& placa, const std::string& horarioSaida, double valorPago);
+
+    // ----- DELETE -----
+
+    /**
+     * Remove o cadastro de um veículo que NÃO está estacionado.
+     * O histórico de saídas é preservado (guarda a placa como texto).
+     * @param placa Placa do veículo.
+     * @return true se removeu.
+     */
+    bool removerVeiculo(const std::string& placa);
 };
 
 #endif

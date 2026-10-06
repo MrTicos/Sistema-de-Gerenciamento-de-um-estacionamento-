@@ -1,21 +1,25 @@
 #include "Moto.h"
 using namespace std;
 
-// Construtor: recebe os dados e os repassa imediatamente para o construtor da classe pai (Veiculo).
+// Repassa os dados para o construtor da classe base (Veiculo).
 Moto::Moto(const string& placa, const string& modelo, const string& cor, double taxaHora)
     : Veiculo(placa, modelo, cor, taxaHora) {}
 
-// Retorna o texto de identificação do veículo.
 string Moto::getTipo() const {
     return "Moto";
 }
 
-// Implementa o cálculo da tarifa de estacionamento, baseando no tempo de permanência em minutos e na taxa por hora do veículo.
+// Regra da moto: até 15 minutos é grátis (tolerância).
+// Passou disso, paga o tempo TOTAL proporcional.
+// Exemplos a R$ 5,00/hora: 10 min = R$ 0,00; 30 min = R$ 2,50.
 double Moto::calcularTarifa(double minutos) const {
+    if (minutos <= TOLERANCIA_MINUTOS) {
+        return 0.0;
+    }
     return minutos * (taxaHora / 60.0);
 }
 
-// Retorna verdadeiro, pois uma moto PODE usar a vaga de moto.
+// Moto estaciona em vaga de moto.
 bool Moto::podeUsarVagaMoto() const {
     return true;
 }

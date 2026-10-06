@@ -3,7 +3,12 @@
 #include <iostream>
 using namespace std;
 
-// Abre a conexão com o banco de dados SQLite. Se falhar, exibe erro e encerra a conexão.
+// ---------------------------------------------------------------------------
+// Conexão
+// ---------------------------------------------------------------------------
+
+// Abre (ou cria) o arquivo do banco. A conexão é guardada como void* para que
+// o header não precise conhecer o SQLite.
 Banco::Banco(const string& nomeArquivo) : banco(nullptr) {
     sqlite3* conexao = nullptr;
 
@@ -15,23 +20,23 @@ Banco::Banco(const string& nomeArquivo) : banco(nullptr) {
         return;
     }
 
-    banco = conexao; // Guarda a conexão no ponteiro genérico.
+    banco = conexao;
 }
 
-// Fecha a conexão com o banco de dados de forma segura.
+// Fecha a conexão ao destruir o objeto.
 Banco::~Banco() {
     if (banco != nullptr) {
         sqlite3_close(static_cast<sqlite3*>(banco));
     }
 }
 
-// Executa queries simples, retornando true se deu certo ou false (com mensagem) se deu erro.
+// Executa um comando SQL simples (sem parâmetros). Devolve false e mostra o erro se falhar.
 bool Banco::executar(const string& sql) {
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     char* mensagemErro = nullptr;
 
     if (sqlite3_exec(conexao, sql.c_str(), nullptr, nullptr, &mensagemErro) != SQLITE_OK) {
-        cerr << "Erro no banco: " << mensagemErro << "\n";
+        cerr << "Erro no banco: " << (mensagemErro != nullptr ? mensagemErro : "desconhecido") << "\n";
         sqlite3_free(mensagemErro);
         return false;
     }
@@ -39,10 +44,17 @@ bool Banco::executar(const string& sql) {
     return true;
 }
 
-// Configura o banco ativando chaves estrangeiras e cria as tabelas veiculos e estacionamentos.
+// ---------------------------------------------------------------------------
+// Criação e atualização das tabelas
+// ---------------------------------------------------------------------------
+
+// Cria as tabelas se não existirem.
+//  - veiculos: cadastro (a placa é a chave primária).
+//  - estacionamentos: cada permanência (entrada, vaga, saída e valor pago).
+// A placa em "estacionamentos" é guardada como texto, SEM chave estrangeira:
+// assim o histórico é preservado mesmo quando o cadastro do veículo é removido.
 bool Banco::criarTabelas() {
     const string sql =
-        "PRAGMA foreign_keys = ON;"
         "CREATE TABLE IF NOT EXISTS veiculos ("
         "placa TEXT PRIMARY KEY,"
         "modelo TEXT NOT NULL,"
@@ -52,16 +64,84 @@ bool Banco::criarTabelas() {
         "CREATE TABLE IF NOT EXISTS estacionamentos ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
         "placa TEXT NOT NULL,"
+        "vaga INTEGER,"
         "horario_entrada TEXT NOT NULL,"
         "horario_saida TEXT,"
-        "valor_pago REAL DEFAULT 0,"
-        "FOREIGN KEY (placa) REFERENCES veiculos(placa)"
+        "valor_pago REAL DEFAULT 0"
         ");";
 
-    return executar(sql);
+    if (!executar(sql)) {
+        return false;
+    }
+
+    // Bancos criados por versões antigas do programa precisam ser convertidos.
+    if (historicoPrecisaMigrar()) {
+        return migrarHistorico();
+    }
+    return true;
 }
 
-// Insere um novo veículo no banco. Usa binds (?) para evitar ataques de injeção de SQL.
+// Verifica se a tabela "estacionamentos" está no formato antigo:
+// com chave estrangeira (impedia remover veículo com histórico) ou sem a coluna "vaga".
+bool Banco::historicoPrecisaMigrar() {
+    sqlite3* conexao = static_cast<sqlite3*>(banco);
+    sqlite3_stmt* stmt = nullptr;
+    bool temChaveEstrangeira = false;
+    bool temColunaVaga = false;
+
+    // Uma linha para cada chave estrangeira da tabela.
+    if (sqlite3_prepare_v2(conexao, "PRAGMA foreign_key_list(estacionamentos);", -1, &stmt, nullptr) == SQLITE_OK) {
+        temChaveEstrangeira = sqlite3_step(stmt) == SQLITE_ROW;
+    }
+    sqlite3_finalize(stmt);
+
+    // Uma linha para cada coluna (a coluna 1 do resultado é o nome).
+    stmt = nullptr;
+    if (sqlite3_prepare_v2(conexao, "PRAGMA table_info(estacionamentos);", -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            string nome = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            if (nome == "vaga") {
+                temColunaVaga = true;
+            }
+        }
+    }
+    sqlite3_finalize(stmt);
+
+    return temChaveEstrangeira || !temColunaVaga;
+}
+
+// Recria a tabela "estacionamentos" no formato atual, copiando todo o histórico.
+// Tudo acontece numa transação: se algo falhar, nada é alterado.
+bool Banco::migrarHistorico() {
+    const string sql =
+        "BEGIN;"
+        "CREATE TABLE estacionamentos_nova ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "placa TEXT NOT NULL,"
+        "vaga INTEGER,"
+        "horario_entrada TEXT NOT NULL,"
+        "horario_saida TEXT,"
+        "valor_pago REAL DEFAULT 0"
+        ");"
+        "INSERT INTO estacionamentos_nova (id, placa, horario_entrada, horario_saida, valor_pago) "
+        "SELECT id, placa, horario_entrada, horario_saida, valor_pago FROM estacionamentos;"
+        "DROP TABLE estacionamentos;"
+        "ALTER TABLE estacionamentos_nova RENAME TO estacionamentos;"
+        "COMMIT;";
+
+    if (executar(sql)) {
+        return true;
+    }
+
+    executar("ROLLBACK;");   // desfaz o que tiver sido feito antes do erro
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// CREATE
+// ---------------------------------------------------------------------------
+
+// Insere um veículo novo. Falha se a placa já existir (chave primária).
 bool Banco::cadastrarVeiculo(const DadosVeiculo& veiculo) {
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     const char* sql = "INSERT INTO veiculos (placa, modelo, cor, tipo) VALUES (?, ?, ?, ?);";
@@ -71,6 +151,7 @@ bool Banco::cadastrarVeiculo(const DadosVeiculo& veiculo) {
         return false;
     }
 
+    // Os "?" são preenchidos pelo bind: o texto nunca vira parte do comando SQL.
     sqlite3_bind_text(stmt, 1, veiculo.placa.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, veiculo.modelo.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 3, veiculo.cor.c_str(), -1, SQLITE_TRANSIENT);
@@ -81,7 +162,30 @@ bool Banco::cadastrarVeiculo(const DadosVeiculo& veiculo) {
     return sucesso;
 }
 
-// Busca os dados de um veículo específico pela placa. Retorna true se encontrar.
+// Abre uma permanência: placa, vaga e horário de entrada (saída fica vazia).
+bool Banco::registrarEntrada(const string& placa, const string& horarioEntrada, int vaga) {
+    sqlite3* conexao = static_cast<sqlite3*>(banco);
+    const char* sql = "INSERT INTO estacionamentos (placa, vaga, horario_entrada) VALUES (?, ?, ?);";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(conexao, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, placa.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, vaga);
+    sqlite3_bind_text(stmt, 3, horarioEntrada.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool sucesso = sqlite3_step(stmt) == SQLITE_DONE;
+    sqlite3_finalize(stmt);
+    return sucesso;
+}
+
+// ---------------------------------------------------------------------------
+// READ
+// ---------------------------------------------------------------------------
+
+// Procura o cadastro pela placa. Preenche "veiculo" e devolve true se encontrar.
 bool Banco::buscarVeiculo(const string& placa, DadosVeiculo& veiculo) {
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     const char* sql = "SELECT placa, modelo, cor, tipo FROM veiculos WHERE placa = ?;";
@@ -94,7 +198,6 @@ bool Banco::buscarVeiculo(const string& placa, DadosVeiculo& veiculo) {
     sqlite3_bind_text(stmt, 1, placa.c_str(), -1, SQLITE_TRANSIENT);
     bool encontrou = false;
 
-    // Se encontrou a linha, extrai os dados para a struct passada por referência.
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         veiculo.placa = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         veiculo.modelo = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
@@ -107,12 +210,13 @@ bool Banco::buscarVeiculo(const string& placa, DadosVeiculo& veiculo) {
     return encontrou;
 }
 
-// Lista os veículos com horário de saída vazio (NULL), ou seja, que estão no estacionamento agora.
+// Lista quem está no estacionamento agora (permanências sem horário de saída),
+// juntando com o cadastro para trazer modelo, cor e tipo. Vaga 0 = banco antigo, sem vaga gravada.
 vector<VeiculoEstacionado> Banco::listarVeiculosEstacionados() {
     vector<VeiculoEstacionado> veiculos;
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     const char* sql =
-        "SELECT v.placa, v.modelo, v.cor, v.tipo, e.horario_entrada "
+        "SELECT v.placa, v.modelo, v.cor, v.tipo, e.horario_entrada, COALESCE(e.vaga, 0) "
         "FROM veiculos v "
         "INNER JOIN estacionamentos e ON v.placa = e.placa "
         "WHERE e.horario_saida IS NULL "
@@ -123,7 +227,6 @@ vector<VeiculoEstacionado> Banco::listarVeiculosEstacionados() {
         return veiculos;
     }
 
-    // Varre todos os resultados e preenche o vetor de retorno.
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         VeiculoEstacionado item;
         item.veiculo.placa = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
@@ -131,7 +234,7 @@ vector<VeiculoEstacionado> Banco::listarVeiculosEstacionados() {
         item.veiculo.cor = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
         item.veiculo.tipo = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
         item.horarioEntrada = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
-        item.vaga = 0;
+        item.vaga = sqlite3_column_int(stmt, 5);
         veiculos.push_back(item);
     }
 
@@ -139,47 +242,7 @@ vector<VeiculoEstacionado> Banco::listarVeiculosEstacionados() {
     return veiculos;
 }
 
-// Registra um novo evento de entrada na tabela estacionamentos para a placa informada.
-bool Banco::registrarEntrada(const string& placa, const string& horarioEntrada) {
-    sqlite3* conexao = static_cast<sqlite3*>(banco);
-    const char* sql = "INSERT INTO estacionamentos (placa, horario_entrada) VALUES (?, ?);";
-    sqlite3_stmt* stmt = nullptr;
-
-    if (sqlite3_prepare_v2(conexao, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-        return false;
-    }
-
-    sqlite3_bind_text(stmt, 1, placa.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, horarioEntrada.c_str(), -1, SQLITE_TRANSIENT);
-
-    bool sucesso = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-    return sucesso;
-}
-
-// Atualiza o registro em aberto de um veículo, inserindo a hora de saída e o valor que foi pago.
-bool Banco::registrarSaida(const string& placa, const string& horarioSaida, double valorPago) {
-    sqlite3* conexao = static_cast<sqlite3*>(banco);
-    const char* sql =
-        "UPDATE estacionamentos SET horario_saida = ?, valor_pago = ? "
-        "WHERE placa = ? AND horario_saida IS NULL;";
-    sqlite3_stmt* stmt = nullptr;
-
-    if (sqlite3_prepare_v2(conexao, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-        return false;
-    }
-
-    sqlite3_bind_text(stmt, 1, horarioSaida.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 2, valorPago);
-    sqlite3_bind_text(stmt, 3, placa.c_str(), -1, SQLITE_TRANSIENT);
-
-    // Confirma se o update deu certo e se pelo menos 1 linha foi alterada.
-    bool sucesso = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(conexao) > 0;
-    sqlite3_finalize(stmt);
-    return sucesso;
-}
-
-// Conta se há registros com saída NULL para esta placa. Se for > 0, está estacionado.
+// True se existe uma permanência dessa placa ainda sem horário de saída.
 bool Banco::veiculoEstaEstacionado(const string& placa) {
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     const char* sql = "SELECT COUNT(*) FROM estacionamentos WHERE placa = ? AND horario_saida IS NULL;";
@@ -200,7 +263,7 @@ bool Banco::veiculoEstaEstacionado(const string& placa) {
     return estacionado;
 }
 
-// Retorna a string do horário de entrada do veículo que está atualmente no estacionamento.
+// Devolve o horário de entrada da permanência em andamento (texto vazio se não houver).
 string Banco::buscarEntrada(const string& placa) {
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     const char* sql = "SELECT horario_entrada FROM estacionamentos WHERE placa = ? AND horario_saida IS NULL LIMIT 1;";
@@ -221,7 +284,7 @@ string Banco::buscarEntrada(const string& placa) {
     return entrada;
 }
 
-// Puxa o histórico de todos os veículos que já completaram o ciclo (entrada e saída registradas).
+// Todas as permanências já encerradas, da mais recente para a mais antiga.
 vector<RegistroSaida> Banco::listarHistorico() {
     vector<RegistroSaida> registros;
     sqlite3* conexao = static_cast<sqlite3*>(banco);
@@ -248,7 +311,7 @@ vector<RegistroSaida> Banco::listarHistorico() {
     return registros;
 }
 
-// Soma o "valor_pago" de todos os registros cuja data de saída (substring dos 10 primeiros caracteres) bata com a data informada.
+// Soma o valor pago nas saídas do dia (os 10 primeiros caracteres da data são AAAA-MM-DD).
 double Banco::calcularFaturamentoDoDia(const string& data) {
     sqlite3* conexao = static_cast<sqlite3*>(banco);
     const char* sql =
@@ -271,35 +334,73 @@ double Banco::calcularFaturamentoDoDia(const string& data) {
     return faturamento;
 }
 
-// Modifica o modelo e a cor de um veículo já cadastrado na base de dados.
-bool Banco::atualizarVeiculo(const std::string& placa, const std::string& modelo, const std::string& cor) {
-    sqlite3* db = static_cast<sqlite3*>(banco);
+// ---------------------------------------------------------------------------
+// UPDATE
+// ---------------------------------------------------------------------------
+
+// Fecha a permanência em andamento, gravando horário de saída e valor pago.
+// Só devolve true se havia mesmo uma permanência aberta (sqlite3_changes > 0).
+bool Banco::registrarSaida(const string& placa, const string& horarioSaida, double valorPago) {
+    sqlite3* conexao = static_cast<sqlite3*>(banco);
+    const char* sql =
+        "UPDATE estacionamentos SET horario_saida = ?, valor_pago = ? "
+        "WHERE placa = ? AND horario_saida IS NULL;";
+    sqlite3_stmt* stmt = nullptr;
+
+    if (sqlite3_prepare_v2(conexao, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, horarioSaida.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 2, valorPago);
+    sqlite3_bind_text(stmt, 3, placa.c_str(), -1, SQLITE_TRANSIENT);
+
+    bool sucesso = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(conexao) > 0;
+    sqlite3_finalize(stmt);
+    return sucesso;
+}
+
+// Troca modelo e cor de um veículo cadastrado (a placa identifica qual).
+bool Banco::atualizarVeiculo(const string& placa, const string& modelo, const string& cor) {
+    sqlite3* conexao = static_cast<sqlite3*>(banco);
     sqlite3_stmt* stmt = nullptr;
     const char* sql = "UPDATE veiculos SET modelo = ?, cor = ? WHERE placa = ?;";
-    
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
-    
+
+    if (sqlite3_prepare_v2(conexao, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
     sqlite3_bind_text(stmt, 1, modelo.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, cor.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 3, placa.c_str(), -1, SQLITE_TRANSIENT);
-    
-    bool ok = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0;
+
+    bool sucesso = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(conexao) > 0;
     sqlite3_finalize(stmt);
-    return ok;
+    return sucesso;
 }
 
-// Apaga o veículo do banco. Regra: não permite exclusão se ele estiver dentro do estacionamento.
-bool Banco::removerVeiculo(const std::string& placa) {
-    if (veiculoEstaEstacionado(placa)) return false; // Trava de segurança
-    
-    sqlite3* db = static_cast<sqlite3*>(banco);
+// ---------------------------------------------------------------------------
+// DELETE
+// ---------------------------------------------------------------------------
+
+// Remove só o CADASTRO. Veículo estacionado não pode ser removido.
+// O histórico de saídas fica intacto (a placa lá é só texto, sem vínculo com o cadastro).
+bool Banco::removerVeiculo(const string& placa) {
+    if (veiculoEstaEstacionado(placa)) {
+        return false;
+    }
+
+    sqlite3* conexao = static_cast<sqlite3*>(banco);
     sqlite3_stmt* stmt = nullptr;
     const char* sql = "DELETE FROM veiculos WHERE placa = ?;";
-    
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
-    
+
+    if (sqlite3_prepare_v2(conexao, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
     sqlite3_bind_text(stmt, 1, placa.c_str(), -1, SQLITE_TRANSIENT);
-    bool ok = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db) > 0;
+
+    bool sucesso = sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(conexao) > 0;
     sqlite3_finalize(stmt);
-    return ok;
+    return sucesso;
 }
