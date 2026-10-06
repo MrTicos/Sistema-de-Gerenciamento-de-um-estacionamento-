@@ -8,7 +8,10 @@
 #include <sstream>
 using namespace std;
 
+// Namespace anônimo: funções utilitárias internas para manipulação de datas, horas e vetores de vagas.
 namespace {
+
+// Retorna a data e hora atual do sistema formatada como "AAAA-MM-DD HH:MM:SS".
 string horarioAtual() {
     auto agora = chrono::system_clock::now();
     time_t tempo = chrono::system_clock::to_time_t(agora);
@@ -19,6 +22,7 @@ string horarioAtual() {
     return saida.str();
 }
 
+// Converte uma string de data/hora no padrão "AAAA-MM-DD HH:MM:SS" em total de minutos desde Epoch.
 long long converterParaMinutos(const string& horario) {
     tm tmHorario = {};
     istringstream entrada(horario);
@@ -27,6 +31,7 @@ long long converterParaMinutos(const string& horario) {
     return static_cast<long long>(tempo / 60);
 }
 
+// Procura e retorna o número da vaga ocupada por determinado veículo. Retorna 0 se não encontrar.
 int numeroDaVaga(const vector<Vaga>& vagas, const string& placa) {
     for (const Vaga& vaga : vagas) {
         if (vaga.getPlacaVeiculo() == placa) {
@@ -36,6 +41,7 @@ int numeroDaVaga(const vector<Vaga>& vagas, const string& placa) {
     return 0;
 }
 
+// Valida se as vagas excedentes podem ser removidas sem afetar veículos estacionados.
 bool podeReduzir(const vector<Vaga>& vagas, int novaQuantidade) {
     for (int i = novaQuantidade; i < static_cast<int>(vagas.size()); i++) {
         if (vagas[i].estaOcupada()) {
@@ -45,6 +51,7 @@ bool podeReduzir(const vector<Vaga>& vagas, int novaQuantidade) {
     return true;
 }
 
+// Redimensiona o vetor de vagas, adicionando novas vagas ou removendo as excedentes.
 void ajustarVagas(vector<Vaga>& vagas, int novaQuantidade, const string& tipo) {
     if (novaQuantidade < static_cast<int>(vagas.size())) {
         vagas.erase(vagas.begin() + novaQuantidade, vagas.end());
@@ -54,14 +61,16 @@ void ajustarVagas(vector<Vaga>& vagas, int novaQuantidade, const string& tipo) {
         }
     }
 }
-}
+} // Fim do namespace anônimo
 
+// Construtor: inicializa a referência do banco, define as taxas padrão e cria as vagas iniciais.
 Estacionamento::Estacionamento(Banco& banco, int quantidadeCarro, int quantidadeMoto)
     : banco(banco), taxaCarro(10.0), taxaMoto(5.0) {
     configurarVagas(quantidadeCarro, quantidadeMoto);
     restaurarVagas();    
 }
 
+// Percorre a lista de vagas apropriada para o tipo de veículo e retorna a primeira vaga disponível.
 Vaga* Estacionamento::encontrarVagaLivre(const string& tipo) {
     vector<Vaga>& vagas = (tipo == "Moto") ? vagasMoto : vagasCarro;
     for (Vaga& vaga : vagas) {
@@ -72,6 +81,7 @@ Vaga* Estacionamento::encontrarVagaLivre(const string& tipo) {
     return nullptr;
 }
 
+// Instancia dinamicamente o tipo correto de veículo (Moto, Caminhonete ou Carro) usando ponteiro inteligente.
 unique_ptr<Veiculo> Estacionamento::criarVeiculo(const DadosVeiculo& dados) {
     if (dados.tipo == "Moto") {
         return make_unique<Moto>(dados.placa, dados.modelo, dados.cor, taxaMoto);
@@ -84,6 +94,7 @@ unique_ptr<Veiculo> Estacionamento::criarVeiculo(const DadosVeiculo& dados) {
     return make_unique<Carro>(dados.placa, dados.modelo, dados.cor, taxaCarro);
 }
 
+// Libera todas as vagas em memória e reocupa apenas as vagas dos veículos registrados como estacionados no banco.
 void Estacionamento::restaurarVagas() {
     for (Vaga& vaga : vagasCarro) vaga.liberar();
     for (Vaga& vaga : vagasMoto) vaga.liberar();
@@ -96,6 +107,7 @@ void Estacionamento::restaurarVagas() {
     }
 }
 
+// Registra a entrada de um veículo: valida cadastro/vagas, ocupa a vaga, grava no banco e gera o ticket.
 Resultado Estacionamento::registrarEntrada(const string& placa, const string& modelo,
                                            const string& cor, const string& tipo,
                                            Ticket* ticket) {
@@ -143,6 +155,7 @@ Resultado Estacionamento::registrarEntrada(const string& placa, const string& mo
     return {true, "Entrada registrada com sucesso!"};
 }
 
+// Registra a saída: calcula o tempo e a tarifa via polimorfismo, atualiza o banco, libera a vaga e gera o ticket de saída.
 Resultado Estacionamento::registrarSaida(const string& placa, Ticket* ticket) {
     DadosVeiculo dados;
     if (!banco.buscarVeiculo(placa, dados)) {
@@ -185,6 +198,7 @@ Resultado Estacionamento::registrarSaida(const string& placa, Ticket* ticket) {
     return {true, "Saida registrada com sucesso!"};
 }
 
+// Atualiza informações de modelo e cor de um veículo cadastrado no banco.
 Resultado Estacionamento::editarVeiculo(const string& placa, const string& novoModelo,
                                         const string& novaCor) {
     DadosVeiculo dados;
@@ -202,6 +216,7 @@ Resultado Estacionamento::editarVeiculo(const string& placa, const string& novoM
     return {true, "Veiculo atualizado com sucesso!"};
 }
 
+// Remove o cadastro de um veículo do banco de dados, desde que não esteja estacionado.
 Resultado Estacionamento::removerVeiculo(const string& placa) {
     DadosVeiculo dados;
     if (!banco.buscarVeiculo(placa, dados)) {
@@ -218,6 +233,7 @@ Resultado Estacionamento::removerVeiculo(const string& placa) {
     return {true, "Veiculo removido com sucesso!"};
 }
 
+// Consulta dados cadastrais e o status atual de ocupação do veículo.
 bool Estacionamento::consultarVeiculo(const string& placa, InfoVeiculo& info) {
     if (!banco.buscarVeiculo(placa, info.dados)) {
         return false;
@@ -228,6 +244,7 @@ bool Estacionamento::consultarVeiculo(const string& placa, InfoVeiculo& info) {
     return true;
 }
 
+// Retorna a lista de veículos estacionados mapeando cada um ao número de vaga correspondente.
 vector<VeiculoEstacionado> Estacionamento::listarVeiculos() {
     vector<VeiculoEstacionado> veiculos = banco.listarVeiculosEstacionados();
 
@@ -238,6 +255,7 @@ vector<VeiculoEstacionado> Estacionamento::listarVeiculos() {
     return veiculos;
 }
 
+// Calcula o total de vagas ocupadas e disponíveis por categoria no momento.
 ResumoVagas Estacionamento::resumoVagas() const {
     ResumoVagas resumo{0, static_cast<int>(vagasCarro.size()),
                        0, static_cast<int>(vagasMoto.size())};
@@ -251,14 +269,17 @@ ResumoVagas Estacionamento::resumoVagas() const {
     return resumo;
 }
 
+// Retorna o histórico completo de saídas registradas no banco.
 vector<RegistroSaida> Estacionamento::historico() {
     return banco.listarHistorico();
 }
 
+// Retorna a soma de faturamento em reais para uma determinada data.
 double Estacionamento::faturamentoDoDia(const string& data) {
     return banco.calcularFaturamentoDoDia(data);
 }
 
+// Altera a quantidade de vagas operacionais do estacionamento após validar se as vagas excedentes estão livres.
 Resultado Estacionamento::configurarVagas(int quantidadeCarro, int quantidadeMoto) {
     if (quantidadeCarro < 0 || quantidadeMoto < 0) {
         return {false, "A quantidade de vagas nao pode ser negativa."};
@@ -276,6 +297,7 @@ Resultado Estacionamento::configurarVagas(int quantidadeCarro, int quantidadeMot
     return {true, "Quantidade de vagas atualizada."};
 }
 
+// Atualiza as tarifas por hora cobradas para carros e motos.
 Resultado Estacionamento::configurarTaxas(double novaTaxaCarro, double novaTaxaMoto) {
     if (novaTaxaCarro < 0 || novaTaxaMoto < 0) {
         return {false, "As taxas nao podem ser negativas."};
@@ -286,6 +308,7 @@ Resultado Estacionamento::configurarTaxas(double novaTaxaCarro, double novaTaxaM
     return {true, "Tarifas atualizadas."};
 }
 
+// Métodos Getters para consultar taxas e coleções de vagas:
 double Estacionamento::getTaxaCarro() const { return taxaCarro; }
 double Estacionamento::getTaxaMoto() const { return taxaMoto; }
 int Estacionamento::getTotalVagasCarro() const { return static_cast<int>(vagasCarro.size()); }
