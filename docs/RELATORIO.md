@@ -20,7 +20,7 @@ Um estacionamento precisa saber quais vagas estão livres, quem entrou e quando,
 - A **placa é digitada manualmente** (não há câmera nem reconhecimento automático).
 - Os **horários de entrada e saída são registrados automaticamente** pelo sistema.
 - Existem dois tipos de vaga (carro e moto) e três tipos de veículo (carro, moto e caminhonete, no sentido de picape/utilitário, não caminhão pesado).
-- A tarifa varia apenas pelo tipo de veículo e é cobrada proporcionalmente ao tempo, em minutos.
+- A tarifa depende do tipo de veículo e do tempo, em minutos: moto tem 15 minutos de tolerância gratuita e caminhonete paga 20% a mais.
 
 ## 3. Requisitos
 
@@ -56,7 +56,7 @@ Um estacionamento precisa saber quais vagas estão livres, quem entrou e quando,
 | RN01 | A placa identifica unicamente o veículo. |
 | RN02 | Moto ocupa vaga de moto; carro e caminhonete ocupam vaga de carro. |
 | RN03 | Vaga de moto é exclusiva para motos. |
-| RN04 | Carro e caminhonete usam a mesma tarifa; moto tem tarifa própria. |
+| RN04 | Carro e caminhonete usam a taxa por hora de carro; moto tem taxa própria. Moto não paga até 15 minutos; caminhonete paga 20% a mais. |
 | RN05 | Um veículo já estacionado não pode registrar nova entrada. |
 | RN06 | Um veículo estacionado não pode ter o cadastro removido. |
 | RN07 | O histórico de estadias é preservado mesmo que o cadastro do veículo seja removido. |
