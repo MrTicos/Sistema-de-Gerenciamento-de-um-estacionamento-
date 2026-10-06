@@ -5,11 +5,12 @@
 #include <string>
 using namespace std;
 
-
+// Limpa os caracteres restantes no buffer de entrada (cin).
 void limparEntrada() {
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
+// Lê um valor inteiro do terminal de forma segura, tratando entradas inválidas (ex: letras).
 int lerInteiro(const string& mensagem) {
     int valor;
 
@@ -27,6 +28,7 @@ int lerInteiro(const string& mensagem) {
     }
 }
 
+// Lê um valor decimal (double) do terminal com validação contra erros de digitação.
 double lerDouble(const string& mensagem) {
     double valor;
 
@@ -44,6 +46,7 @@ double lerDouble(const string& mensagem) {
     }
 }
 
+// Lê uma linha inteira de texto digitada pelo usuário.
 string lerTexto(const string& mensagem) {
     string texto;
     cout << mensagem;
@@ -51,6 +54,7 @@ string lerTexto(const string& mensagem) {
     return texto;
 }
 
+// Apresenta o menu para seleção da categoria do veículo (Carro, Moto ou Caminhonete).
 string escolherTipo() {
     while (true) {
         cout << "1 - Carro\n";
@@ -67,11 +71,12 @@ string escolherTipo() {
     }
 }
 
-
+// Exibe na tela a mensagem retornada pelas operações do estacionamento.
 void mostrarResultado(const Resultado& resultado) {
     cout << resultado.mensagem << "\n";
 }
 
+// Exibe o painel com a quantidade de vagas livres e totais por categoria.
 void mostrarVagas(const Estacionamento& estacionamento) {
     ResumoVagas resumo = estacionamento.resumoVagas();
 
@@ -80,6 +85,7 @@ void mostrarVagas(const Estacionamento& estacionamento) {
     cout << "Moto: " << resumo.livresMoto << "/" << resumo.totalMoto << " livres\n";
 }
 
+// Exibe os detalhes cadastrais e a situação atual de um veículo específico.
 void mostrarVeiculo(Estacionamento& estacionamento, const string& placa) {
     InfoVeiculo info;
 
@@ -102,6 +108,7 @@ void mostrarVeiculo(Estacionamento& estacionamento, const string& placa) {
     }
 }
 
+// Lista no terminal todos os veículos que estão atualmente ocupando vagas.
 void mostrarVeiculosEstacionados(Estacionamento& estacionamento) {
     vector<VeiculoEstacionado> veiculos = estacionamento.listarVeiculos();
 
@@ -121,6 +128,7 @@ void mostrarVeiculosEstacionados(Estacionamento& estacionamento) {
     }
 }
 
+// Exibe o histórico de todos os veículos que já saíram do estacionamento.
 void mostrarHistorico(Estacionamento& estacionamento) {
     vector<RegistroSaida> registros = estacionamento.historico();
 
@@ -139,17 +147,19 @@ void mostrarHistorico(Estacionamento& estacionamento) {
     }
 }
 
+// Consulta e exibe o faturamento total acumulado em uma data informada.
 void mostrarFaturamento(Estacionamento& estacionamento, const string& data) {
     cout << "Faturamento de " << data << ": R$ "
          << fixed << setprecision(2) << estacionamento.faturamentoDoDia(data) << "\n";
 }
 
-
+// Fluxo interativo para registrar a entrada de um veículo e gerar o ticket impresso.
 void registrarEntrada(Estacionamento& estacionamento) {
     string placa = lerTexto("Placa: ");
     InfoVeiculo existente;
-    Ticket ticket("", "", "", "", 0, "");   
+    Ticket ticket("", "", "", "", 0, "");  
 
+    // Se o veículo já possui cadastro prévio no banco de dados:
     if (estacionamento.consultarVeiculo(placa, existente)) {
         cout << "\nVeiculo ja cadastrado:\n";
         cout << "Modelo: " << existente.dados.modelo << "\n";
@@ -168,6 +178,7 @@ void registrarEntrada(Estacionamento& estacionamento) {
         return;
     }
 
+    // Se é a primeira vez do veículo no sistema:
     string modelo = lerTexto("Modelo: ");
     string cor = lerTexto("Cor: ");
     string tipo = escolherTipo();
@@ -177,6 +188,7 @@ void registrarEntrada(Estacionamento& estacionamento) {
     if (r.ok) ticket.imprimirEntrada();
 }
 
+// Fluxo interativo para registrar a saída de um veículo e imprimir o comprovante de pagamento.
 void registrarSaida(Estacionamento& estacionamento) {
     Ticket ticket("", "", "", "", 0, "");
     Resultado r = estacionamento.registrarSaida(lerTexto("Placa: "), &ticket);
@@ -184,6 +196,7 @@ void registrarSaida(Estacionamento& estacionamento) {
     if (r.ok) ticket.imprimirSaida();
 }
 
+// Submenu para alterar a quantidade operacional de vagas do estacionamento.
 void configurarVagas(Estacionamento& estacionamento) {
     cout << "\n--- VAGAS ---\n";
     cout << "Carro/Caminhonete: " << estacionamento.getTotalVagasCarro() << "\n";
@@ -195,6 +208,7 @@ void configurarVagas(Estacionamento& estacionamento) {
     mostrarResultado(estacionamento.configurarVagas(vagasCarro, vagasMoto));
 }
 
+// Submenu para reajustar os valores das tarifas/hora por categoria.
 void configurarTaxas(Estacionamento& estacionamento) {
     cout << "\n--- TARIFAS ---\n";
     cout << "Carro/Caminhonete: R$ " << estacionamento.getTaxaCarro() << " por hora\n";
@@ -206,6 +220,7 @@ void configurarTaxas(Estacionamento& estacionamento) {
     mostrarResultado(estacionamento.configurarTaxas(taxaCarro, taxaMoto));
 }
 
+// Menu secundário contendo as opções de configuração do sistema.
 void menuConfiguracoes(Estacionamento& estacionamento) {
     int opcao;
 
@@ -235,6 +250,7 @@ void menuConfiguracoes(Estacionamento& estacionamento) {
     } while (opcao != 0);
 }
 
+// Opção para alterar dados cadastrais (modelo/cor) ou excluir um veículo do banco.
 void gerenciarVeiculo(Estacionamento& estacionamento) {
     string placa, modelo, cor;
     int opcao;
@@ -257,6 +273,7 @@ void gerenciarVeiculo(Estacionamento& estacionamento) {
     }
 }
 
+// Imprime as opções do menu principal.
 void mostrarMenu() {
     cout << "\n==============================\n";
     cout << "       ESTACIONAMENTO         \n";
@@ -273,18 +290,23 @@ void mostrarMenu() {
     cout << "0 - Sair\n";
 }
 
+// Ponto de entrada do programa C++.
 int main() {
+    // Inicializa a conexão com o SQLite.
     Banco banco("estacionamento.db");
 
+    // Tenta preparar/criar as tabelas necessárias no arquivo de banco de dados.
     if (!banco.criarTabelas()) {
         cout << "Nao foi possivel preparar o banco de dados.\n";
         return 1;
     }
 
+    // Instancia o controlador principal do estacionamento (inicia com 20 vagas para carro e 10 para moto).
     Estacionamento estacionamento(banco, 20, 10);
 
     int opcao;
 
+    // Loop principal da aplicação.
     do {
         mostrarMenu();
         opcao = lerInteiro("Escolha uma opcao: ");
