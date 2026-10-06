@@ -1,21 +1,27 @@
 # 🚗 Sistema de Gerenciamento de Estacionamento
 
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=c%2B%2B&logoColor=white)
+![Qt](https://img.shields.io/badge/Qt-Widgets-41CD52?logo=qt&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)
 ![CMake](https://img.shields.io/badge/CMake-3.20%2B-064F8C?logo=cmake&logoColor=white)
 ![Plataformas](https://img.shields.io/badge/Windows%20%7C%20Linux-lightgrey)
 
-Aplicação de terminal em **C++** que controla a entrada e a saída de veículos, a ocupação das vagas, o cálculo de tarifas, a emissão de tickets, o histórico e o faturamento. Os dados são persistidos em **SQLite**.
+Aplicação em **C++** que controla a entrada e a saída de veículos, a ocupação das vagas, o cálculo de tarifas, a emissão de tickets, o histórico e o faturamento. Os dados são persistidos em **SQLite** e a interface gráfica é feita com **Qt 6 (Widgets)**. O projeto gera dois executáveis: `estacionamento` (terminal) e `estacionamento_gui` (interface gráfica).
 
 Projeto desenvolvido para a disciplina **Estruturas de Dados Orientadas a Objetos (CIN0135)**, da **UFPE**, sob orientação do professor **Francisco Paulo**.
+
+<p align="center">
+  <img src="docs/img/Captura%20de%20tela%202026-10-05%20223215.png" alt="Janela principal do sistema: formulário do veículo à esquerda e tabela de veículos estacionados à direita" width="900">
+</p>
+
 
 ---
 
 ## Sumário
 
+- [Interface gráfica](#interface-gráfica)
 - [Funcionalidades](#funcionalidades)
 - [Como executar](#como-executar)
-- [Exemplo de uso](#exemplo-de-uso)
 - [Regras de negócio](#regras-de-negócio)
 - [Conceitos de POO aplicados](#conceitos-de-poo-aplicados)
 - [Arquitetura](#arquitetura)
@@ -27,20 +33,68 @@ Projeto desenvolvido para a disciplina **Estruturas de Dados Orientadas a Objeto
 
 ---
 
+## Interface gráfica
+
+A interface é uma janela única (`JanelaPrincipal`, baseada em `QMainWindow`), dividida em duas áreas:
+
+**Formulário "Veículo" (à esquerda)**
+
+- Campos de **placa**, **modelo**, **cor** e **tipo** (Carro, Moto ou Caminhonete).
+- Botões **Registrar entrada** e **Registrar saída**.
+- Para um veículo que já foi cadastrado, basta digitar a placa: modelo, cor e tipo são reaproveitados.
+- A placa é normalizada automaticamente (sem espaços nas pontas e em maiúsculas).
+
+**Painel de ocupação (à direita)**
+
+- No topo, as **vagas livres** de carro/caminhonete e de moto (por exemplo, "7 de 20").
+- Uma tabela com os **veículos estacionados**: vaga, placa, tipo, modelo, cor e horário de entrada.
+- Ao clicar em uma linha da tabela, a placa é copiada para o formulário, o que facilita registrar a saída.
+
+**Tickets e erros**
+
+- Depois de uma entrada ou saída bem-sucedida, o ticket é exibido em uma caixa de diálogo com fonte monoespaçada.
+- Quando a operação não é possível (por exemplo, veículo já estacionado ou sem vaga livre), a mensagem aparece em um aviso.
+
+<p align="center">
+  <img src="docs/img/Captura%20de%20tela%202026-10-05%20223255.png" alt="Ticket de entrada exibido em caixa de diálogo" width="340">
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/img/Captura%20de%20tela%202026-10-05%20223303.png" alt="Ticket de saída exibido em caixa de diálogo" width="320">
+</p>
+
+A janela não contém regras de negócio: ela apenas chama os métodos de `Estacionamento`, recebe um `Resultado` (sucesso e mensagem) e atualiza a tela.
+
+---
+
 ## Funcionalidades
 
-| Menu | Funcionalidade | Descrição |
-| :--: | -------------- | --------- |
-| 1 | **Registrar entrada** | Cadastra o veículo (se for novo), valida se já está estacionado, aloca uma vaga compatível e emite o ticket de entrada. |
-| 2 | **Registrar saída** | Calcula o tempo de permanência em minutos, o valor devido, libera a vaga e emite o ticket de saída. |
-| 3 | **Consultar vagas** | Mostra as vagas disponíveis para carros/caminhonetes e para motos. |
-| 4 | **Consultar veículo** | Busca por placa: tipo, modelo, cor, situação atual e horário de entrada. |
-| 5 | **Listar veículos** | Exibe quem está no estacionamento agora (vaga, placa, tipo, modelo, cor e entrada). |
-| 6 | **Histórico de saídas** | Lista saídas anteriores com placa, entrada, saída e valor pago. |
-| 7 | **Faturamento do dia** | Soma o valor arrecadado em uma data. |
-| 8 | **Gerenciar veículos** | Exclua ou edite uma vaga/carro. |
-| 9 | **Configurações** | Altera a quantidade de vagas e as tarifas em tempo de execução. |
-| 0 | **Sair** | Encerra o programa. |
+### Funcionalidades do sistema
+
+| Funcionalidade | Descrição |
+| -------------- | --------- |
+| **Registrar entrada** | Cadastra o veículo (se for novo), valida se já está estacionado, aloca uma vaga compatível e emite o ticket de entrada. |
+| **Registrar saída** | Calcula o tempo de permanência em minutos, o valor devido, libera a vaga e emite o ticket de saída. |
+| **Consultar vagas** | Mostra as vagas livres para carros/caminhonetes e para motos. |
+| **Consultar veículo** | Busca por placa: tipo, modelo, cor, situação atual e horário de entrada. |
+| **Listar veículos** | Exibe quem está no estacionamento agora (vaga, placa, tipo, modelo, cor e entrada). |
+| **Histórico de saídas** | Lista saídas anteriores com placa, entrada, saída e valor pago. |
+| **Faturamento do dia** | Soma o valor arrecadado em uma data. |
+| **Gerenciar veículos** | Edita modelo e cor de um veículo cadastrado ou remove o cadastro (somente se ele não estiver estacionado). |
+| **Configurações** | Altera a quantidade de vagas e as tarifas em tempo de execução. |
+
+### Menu do terminal
+
+| Menu | Funcionalidade |
+| :--: | -------------- |
+| 1 | Registrar entrada |
+| 2 | Registrar saída |
+| 3 | Consultar vagas |
+| 4 | Consultar veículo |
+| 5 | Listar veículos no estacionamento |
+| 6 | Histórico de saídas |
+| 7 | Faturamento do dia |
+| 8 | Gerenciar veículos |
+| 9 | Configurações |
+| 0 | Sair |
 
 ---
 
@@ -51,18 +105,22 @@ Projeto desenvolvido para a disciplina **Estruturas de Dados Orientadas a Objeto
 - Compilador com suporte a **C++17**
 - **CMake 3.20** ou superior
 - **SQLite3** (biblioteca e cabeçalhos de desenvolvimento)
+- **Qt 6 (módulo Widgets)**, necessário apenas para a interface gráfica. Se o CMake não encontrar o Qt 6, ele compila somente a versão de terminal e avisa: `Qt6 nao encontrado: compilando apenas a versao de terminal.`
 
 <details>
 <summary><b>Linux</b></summary>
 
 ```bash
 # Dependências (Debian/Ubuntu)
-sudo apt install build-essential cmake libsqlite3-dev
+sudo apt install build-essential cmake libsqlite3-dev qt6-base-dev
 
-# Compilar e executar
+# Compilar
 cmake -S . -B build
 cmake --build build
-./build/estacionamento
+
+# Executar
+./build/estacionamento        # terminal
+./build/estacionamento_gui    # interface gráfica
 ```
 
 </details>
@@ -71,46 +129,36 @@ cmake --build build
 <summary><b>Windows (MSYS2 / MinGW)</b></summary>
 
 ```powershell
+# Dependência da interface gráfica (terminal do MSYS2 UCRT64)
+pacman -S mingw-w64-ucrt-x86_64-qt6-base
+
+# Compilar
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/msys64/ucrt64"
 cmake --build build
-.\build\estacionamento.exe
+
+# Executar
+.\build\estacionamento.exe        # terminal
+.\build\estacionamento_gui.exe    # interface gráfica
 ```
+
+Se a janela não abrir por falta de DLLs do Qt, execute pelo terminal do MSYS2 UCRT64 ou acrescente `C:\msys64\ucrt64\bin` ao `PATH`.
 
 </details>
 
-> **Banco de dados:** ao iniciar, o programa abre (ou cria) o arquivo `estacionamento.db` no diretório de execução. As tabelas são criadas automaticamente na primeira execução.
+### Banco de dados
 
----
+Ao iniciar, o programa abre (ou cria) o arquivo `estacionamento.db` no diretório de execução, e as tabelas são criadas automaticamente na primeira vez.
 
-## Exemplo de uso
+Na interface gráfica, é possível usar outro arquivo definindo a variável de ambiente `ESTACIONAMENTO_DB`, o que é útil para testes e demonstrações sem mexer nos dados reais:
 
-Menu principal:
-
-```text
-==============================
-       ESTACIONAMENTO
-==============================
-1 - Registrar entrada
-2 - Registrar saída
-3 - Consultar vagas
-4 - Consultar veículo
-5 - Listar veículos no estacionamento
-6 - Histórico de saídas
-7 - Faturamento do dia
-8 - Gerenciar veículos
-9 - Configurações
-0 - Sair
+```powershell
+# Windows (PowerShell)
+$env:ESTACIONAMENTO_DB = "demo.db"
 ```
 
-Menu de configurações:
-
-```text
-==============================
-        CONFIGURAÇÕES
-==============================
-1 - Alterar quantidade de vagas
-2 - Alterar tarifas
-0 - Voltar
+```bash
+# Linux
+ESTACIONAMENTO_DB=demo.db ./build/estacionamento_gui
 ```
 
 ---
@@ -127,11 +175,15 @@ Menu de configurações:
 | Carro | Vaga de carro |
 | Caminhonete | Vaga de carro |
 
-**Tarifas.** Carros e caminhonetes compartilham a mesma tarifa; motos têm tarifa própria. Ambas podem ser alteradas no menu de configurações.
+O estacionamento inicia com 20 vagas de carro e 10 de moto. Esses números podem ser alterados nas configurações.
+
+**Tarifas.** Carros e caminhonetes compartilham a mesma tarifa; motos têm tarifa própria. Ambas podem ser alteradas nas configurações.
 
 **Cobrança.** O tempo de permanência é calculado em **minutos**, e a cobrança é proporcional a esse tempo.
 
-**Tickets.** A classe `Ticket` gera os comprovantes exibidos no terminal:
+**Gerenciamento de veículos.** É possível editar o modelo e a cor de um veículo cadastrado. A remoção do cadastro só é permitida se o veículo não estiver estacionado, e o histórico de estadias é mantido.
+
+**Tickets.** A classe `Ticket` gera os comprovantes de entrada e de saída:
 
 | Campo | Entrada | Saída |
 | ----- | :-----: | :---: |
@@ -149,13 +201,19 @@ Menu de configurações:
 | Conceito | Onde aparece |
 | -------- | ------------ |
 | **Abstração** | `Veiculo` é uma classe abstrata que define o contrato comum a todos os veículos. |
-| **Herança** | `Carro`, `Moto` e `Caminhonete` herdam de `Veiculo`. |
-| **Polimorfismo** | Métodos virtuais puros, como `calcularTarifa`, são implementados de forma diferente por cada classe derivada. |
+| **Herança** | `Carro`, `Moto` e `Caminhonete` herdam de `Veiculo`; `JanelaPrincipal` herda de `QMainWindow`. |
+| **Polimorfismo** | Métodos virtuais puros, como `calcularTarifa`, são implementados de forma diferente por cada classe derivada. Em `Estacionamento::registrarSaida`, a chamada é feita por um `unique_ptr<Veiculo>`. |
 | **Encapsulamento** | Atributos com acesso controlado (`private`/`protected`) e manipulados por métodos públicos. |
+| **Fábrica simples** | `Estacionamento::criarVeiculo` decide qual classe concreta instanciar e devolve sempre um `Veiculo`. |
+| **Separação de responsabilidades** | A interface (`JanelaPrincipal`) só exibe e coleta dados; as regras ficam em `Estacionamento` e o acesso ao SQLite, em `Banco`. |
 
 ```cpp
 // Veiculo.h: cada tipo de veículo define sua própria regra de cobrança
 virtual double calcularTarifa(double minutos) const = 0;
+
+// Estacionamento.cpp: a versão executada depende do objeto real
+unique_ptr<Veiculo> veiculo = criarVeiculo(dados);
+double valor = veiculo->calcularTarifa(minutos);
 ```
 
 ---
@@ -169,11 +227,10 @@ virtual double calcularTarifa(double minutos) const = 0;
 | `Veiculo` | Classe abstrata base dos veículos |
 | `Carro`, `Moto`, `Caminhonete` | Tipos concretos de veículo |
 | `Vaga` | Representa e controla o estado de uma vaga |
-| `Estacionamento` | Orquestra o funcionamento geral (entrada, saída, consultas, configurações) |
-| `Ticket` | Armazena e exibe os dados dos tickets |
+| `Estacionamento` | Orquestra o funcionamento geral (entrada, saída, consultas, gerenciamento e configurações) |
+| `Ticket` | Armazena os dados dos tickets e gera o texto de entrada e de saída |
 | `Banco` | Concentra todo o acesso ao SQLite |
-
-`main.cpp` contém o menu principal e a interação com o usuário.
+| `JanelaPrincipal` | Janela Qt: formulário, botões, vagas livres e tabela de veículos estacionados |
 
 ### Diagrama de classes
 
@@ -182,7 +239,9 @@ classDiagram
     Veiculo <|-- Carro
     Veiculo <|-- Moto
     Veiculo <|-- Caminhonete
+    QMainWindow <|-- JanelaPrincipal
 
+    JanelaPrincipal --> Estacionamento
     Estacionamento --> Banco
     Estacionamento *-- Vaga
     Estacionamento ..> Veiculo
@@ -244,8 +303,8 @@ classDiagram
         -double minutos
         -double valor
         +definirSaida()
-        +imprimirEntrada()
-        +imprimirSaida()
+        +textoEntrada()
+        +textoSaida()
     }
 
     class Estacionamento {
@@ -254,13 +313,17 @@ classDiagram
         -vector~Vaga~ vagasMoto
         -double taxaCarro
         -double taxaMoto
+        -criarVeiculo()
+        -encontrarVagaLivre()
         +registrarEntrada()
         +registrarSaida()
         +consultarVeiculo()
         +listarVeiculos()
-        +mostrarVagas()
+        +resumoVagas()
         +mostrarHistorico()
         +mostrarFaturamentoDoDia()
+        +editarVeiculo()
+        +removerVeiculo()
         +configurarVagas()
         +configurarTaxas()
     }
@@ -270,6 +333,8 @@ classDiagram
         +criarTabelas()
         +cadastrarVeiculo()
         +buscarVeiculo()
+        +atualizarVeiculo()
+        +removerVeiculo()
         +listarVeiculosEstacionados()
         +registrarEntrada()
         +registrarSaida()
@@ -277,6 +342,22 @@ classDiagram
         +buscarEntrada()
         +listarHistorico()
         +calcularFaturamentoDoDia()
+    }
+
+    class JanelaPrincipal {
+        -Estacionamento& estacionamento
+        -QLineEdit* campoPlaca
+        -QLineEdit* campoModelo
+        -QLineEdit* campoCor
+        -QComboBox* comboTipo
+        -QLabel* textoVagas
+        -QTableWidget* tabela
+        +JanelaPrincipal()
+        -registrarEntrada()
+        -registrarSaida()
+        -usarPlacaDaLinha()
+        -atualizar()
+        -mostrarTicket()
     }
 ```
 
@@ -338,8 +419,8 @@ Cada entrada gera um registro em `estacionamentos`; na saída, esse mesmo regist
 | -------- | -------------------- |
 | **Create** | Cadastro de veículos e registro de entradas |
 | **Read** | Consulta de veículos, vagas, veículos estacionados, histórico e faturamento |
-| **Update** | Registro de saída (atualiza o registro de permanência) e configurações |
-| **Delete** | Exclua ou edite veículos/vagas |
+| **Update** | Edição de modelo e cor do veículo; registro de saída (atualiza o registro de permanência) |
+| **Delete** | Remoção do cadastro de um veículo que não esteja estacionado (o histórico é preservado) |
 
 ---
 
@@ -349,6 +430,9 @@ Cada entrada gera um registro em `estacionamentos`; na saída, esse mesmo regist
 estacionamento/
 ├── CMakeLists.txt
 ├── README.md
+├── docs/
+│   ├── index.html
+│   └── RELATORIO.md
 ├── include/
 │   ├── Banco.h
 │   ├── Caminhonete.h
@@ -358,6 +442,10 @@ estacionamento/
 │   ├── Ticket.h
 │   ├── Vaga.h
 │   └── Veiculo.h
+├── gui/
+│   ├── JanelaPrincipal.cpp
+│   ├── JanelaPrincipal.h
+│   └── main_gui.cpp
 └── src/
     ├── Banco.cpp
     ├── Caminhonete.cpp
@@ -370,13 +458,15 @@ estacionamento/
     └── main.cpp
 ```
 
-Os arquivos `.h` (em `include/`) declaram as classes; os `.cpp` (em `src/`) implementam seus métodos.
+Os arquivos `.h` (em `include/`) declaram as classes do núcleo e os `.cpp` (em `src/`) as implementam. O núcleo é compilado como a biblioteca estática `nucleo`, usada pelos dois executáveis: o terminal (`src/main.cpp`) e a interface gráfica (pasta `gui/`). A pasta `docs/` contém o relatório e a página do projeto.
 
 ---
 
 ## Limitações conhecidas
 
 - A placa é digitada manualmente (não há leitura automática).
+- O número da vaga não é guardado no banco: ao reabrir o programa, cada veículo estacionado recebe a primeira vaga livre do seu tipo.
+- A janela principal cobre entrada, saída, vagas livres e veículos estacionados; histórico, faturamento, gerenciamento de veículos e configurações estão disponíveis no menu do terminal.
 
 ---
 
@@ -387,7 +477,6 @@ Os arquivos `.h` (em `include/`) declaram as classes; os `.cpp` (em `src/`) impl
 | 📦 Repositório | https://github.com/MrTicos/Sistema-de-Gerenciamento-de-um-estacionamento- |
 | 🌐 Página do projeto | https://mrticos.github.io/Sistema-de-Gerenciamento-de-um-estacionamento-/ |
 | 📄 Relatório | https://github.com/MrTicos/Sistema-de-Gerenciamento-de-um-estacionamento-/blob/main/docs/RELATORIO.md |
-| 🎥 Vídeo de apresentação | _em breve_ |
 
 ---
 
